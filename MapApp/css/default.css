@@ -1,4 +1,11 @@
-﻿#map{
+﻿.win-listview :not(.win-footprint).win-container {
+    background-color: rgba(128,128,128,0.5);
+}
+body{
+	text-shadow: 0.5px 0.5px 0.9px #888; 
+}
+
+#map{
 	position: absolute;
 	height:100%;
 	width:100%;
