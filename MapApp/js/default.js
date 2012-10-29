@@ -73,10 +73,6 @@ var map;
       return i;
     }
 
-    /*var loadedModuleCount = 0;  //ロードし終えたモジュールのカウンタ
-    Microsoft.Maps.loadModule('Microsoft.Maps.Map',{callback:complete});
-    Microsoft.Maps.loadModule('Microsoft.Maps.Map', { callback: complete });*/
-
     function complete(){  //ロードのモジュールを終えるごとに呼び出される関数
       if(loadedModuleCount>arguments.length-2){  //すべてのモジュールをロードし終えたらコールバックを実行
         callback()
@@ -113,7 +109,12 @@ var map;
       if (!data.group) {
         return
       }
-      setItem(data);
+      if (lat == 'undefined' || lon == 'undefined') {
+
+      } else {
+        setItem(data);
+      }
+      
     }
 
     function setItem(formattedData) {
