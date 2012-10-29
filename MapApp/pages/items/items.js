@@ -50,7 +50,7 @@
         },
 
         _itemInvoked: function (args) {
-            var groupKey = Data.groups.getAt(args.detail.itemIndex).key;
+          var groupKey = Data.groups.getAt(args.detail.itemIndex).key;
             WinJS.Navigation.navigate("/pages/split/split.html", { groupKey: groupKey });
         }
     });

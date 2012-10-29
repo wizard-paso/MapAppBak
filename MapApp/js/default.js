@@ -11,27 +11,33 @@ var map;
   var app = WinJS.Application;
   var activation = Windows.ApplicationModel.Activation;
   var nav = WinJS.Navigation;
+  var searchManager;
 
   app.addEventListener("activated", function (args) {
     if (args.detail.kind === activation.ActivationKind.launch) {
       if (args.detail.previousExecutionState !== activation.ApplicationExecutionState.terminated) {
         // TODO: このアプリケーションは新しく起動しました。ここでアプリケーションを
         // 初期化します。
-        loadModules( 
-            function () {
-              var mapOptions =
-                {
-                  // Add your Bing Maps key here
-                  credentials: 'Ald0G_z2_H1cpKSD5Fqa59tD3RsQI6Q3XeX9CW2aGQ_jlGSeeitTykR_DmQApIKM',
-                  center: new Microsoft.Maps.Location(34.397517, 132.45373),
-                  mapTypeId: Microsoft.Maps.MapTypeId.road,
-                  zoom: 12,
-                  theme: new Microsoft.Maps.Themes.BingTheme()
-                };
-              map = new Microsoft.Maps.Map(document.getElementById("map"), mapOptions);
-              loadContents();
-            }, 'Microsoft.Maps.Map', 'Microsoft.Maps.Themes.BingTheme'
-        );
+        loadModules(function(){
+          var mapOptions =
+  {
+    credentials: 'Ald0G_z2_H1cpKSD5Fqa59tD3RsQI6Q3XeX9CW2aGQ_jlGSeeitTykR_DmQApIKM',
+    center: new Microsoft.Maps.Location(34.397517, 132.45373),
+    mapTypeId: Microsoft.Maps.MapTypeId.road,
+    zoom: 12,
+    theme: new Microsoft.Maps.Themes.BingTheme()
+  };
+          map = new Microsoft.Maps.Map(document.getElementById("map"), mapOptions);
+
+          loadModules(function () {
+
+            map.addComponent("searchManager", new Microsoft.Maps.Search.SearchManager(map));
+            searchManager = map.getComponent("searchManager");
+
+            loadContents();
+          },'Microsoft.Maps.Search');
+
+        }, 'Microsoft.Maps.Map', 'Microsoft.Maps.Themes.BingTheme');
 
       } else {
         // TODO: このアプリケーションは中断状態から再度アクティブ化されました。
@@ -70,12 +76,13 @@ var map;
     } catch (e) {//ロードエラーが発生した場合、
       var md = new Windows.UI.Popups.MessageDialog(e.message +"["+i+"]");
       md.showAsync();
-      return i;
+      callback(i)
+      return
     }
 
     function complete(){  //ロードのモジュールを終えるごとに呼び出される関数
       if(loadedModuleCount>arguments.length-2){  //すべてのモジュールをロードし終えたらコールバックを実行
-        callback()
+        callback(null)
       }
     }
 
@@ -100,7 +107,7 @@ var map;
       
       ((jsonData["event"]) ? jsonData["event"] : jsonData["events"]).forEach(function (eventData) {
         
-        checkData({group:group, title:eventData.title, subtitle:"subtitle", description:eventData.event_url, content:"", backgroundImage:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC", lat:eventData.lat, lon:eventData.lon });
+        checkData({group:group, title:eventData.title, subtitle:eventData.address+" "+eventData.place, description:eventData.event_url, content:"", backgroundImage:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC", lat:eventData.lat, lon:eventData.lon,address:eventData.address });
       })
     }
 
@@ -109,12 +116,61 @@ var map;
       if (!data.group) {
         return
       }
-      if (lat == 'undefined' || lon == 'undefined') {
+      if (data.lat == undefined || data.lon == undefined) {
+        getLatLon(data.address,
+          function (result) {
+            //var topResult = ;
+            if (result.results[0]) {
+              data.lat = result.results[0].location.latitude;
+              data.lon = result.results[0].location.longitude;
+              setItem(data);
+            } else {
+              setItem(data);
+            }
 
+          },
+          function () {return});
       } else {
         setItem(data);
       }
       
+    }
+    // geocode api request
+    function getLatLon(word, onSuccess,onFailed) {
+      var where = word;
+
+      var request =
+      {
+        where: where,
+        count: 1,
+        callback: onSuccess,
+        errorCallback: onFailed    //エラーの時GeocodeFailedからではなぜかfuncを呼べないので、ここから呼ぶことに。要検証
+      };
+      searchManager.geocode(request);
+    }
+
+    // geocode api request success callback
+    function onGeocodeSuccess(result, userData) {
+      if (result) {
+        var find = false;
+        for (var i in result.results) {//取得した座標が東広島内か外かを計算するもう少し良い方法はないか？
+          if (boundHigashi.getNorth() > result.results[i].location.latitude)
+            if (boundHigashi.getEast() > result.results[i].location.longitude)
+              if (boundHigashi.getSouth() < result.results[i].location.latitude)
+                if (boundHigashi.getWest() < result.results[i].location.longitude) {
+                  find = true;
+                  userData.func(result.results[i].location);
+                  break;
+                }
+
+        }
+        if (!find) {//すべての取得座標が東広島以外だったらnullを返す。
+          userData.func(null);
+        }
+      } else {
+        userData.func(null);//結果が返ってこなければnullを返す
+      }
+
     }
 
     function setItem(formattedData) {
