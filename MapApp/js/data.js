@@ -70,10 +70,10 @@
     // これらの各サンプル グループには、個別に表示する一意のキーが
     // 必要です。
     var sampleGroups = [
-        //{ key: "Atnd", title: "Atnd", subtitle: "Group Subtitle: 1", backgroundImage: darkGray, description: groupDescription, url: "http://api.atnd.org/events/?keyword_or=google,cloud&format=json&count=10", func: funcAtnd },
-        { key: "kokucheese1", title: "こくちーず", subtitle: "Group Subtitle: 2", backgroundImage: lightGray, description: groupDescription, url: "http://azusaar.appspot.com/api/kokucheese?count=10", func: funcAtnd },
-        { key: "partake1", title: "partake", subtitle: "Group Subtitle: 3", backgroundImage: mediumGray, description: groupDescription, url: "http://azusaar.appspot.com/api/partake?count=10", func: funcAtnd },
-        { key: "zusaar1", title: "zusaar", subtitle: "Group Subtitle: 4", backgroundImage: lightGray, description: groupDescription, url: "http://azusaar.appspot.com/api/zusaar?count=10", func: funcAtnd }
+        //{ key: "Atnd", title: "Atnd", subtitle: "Group Subtitle: 1", backgroundImage: darkGray, description: groupDescription, url: "http://api.atnd.org/events/?keyword_or=google,cloud&format=json&count=100", func: funcAtnd },
+        { key: "kokucheese1", title: "こくちーず", subtitle: "Group Subtitle: 2", backgroundImage: lightGray, description: groupDescription, url: "http://azusaar.appspot.com/api/kokucheese?count=100", func: funcAtnd },
+        { key: "partake1", title: "partake", subtitle: "Group Subtitle: 3", backgroundImage: mediumGray, description: groupDescription, url: "http://azusaar.appspot.com/api/partake?count=100", func: funcAtnd },
+        { key: "zusaar1", title: "zusaar", subtitle: "Group Subtitle: 4", backgroundImage: lightGray, description: groupDescription, url: "http://azusaar.appspot.com/api/zusaar?count=100", func: funcAtnd }
     ];
 
     function funcAtnd(obj) {

@@ -4,8 +4,22 @@
 .win-selectionstylefilled.win-listview .win-container:hover {
 	background-color: rgba(128, 128, 128, 0.8);
 }
+.win-backbutton{
+	box-shadow:  0 0 2px 2px #888; 
+	background-color: rgba(128,128,128,0.5);
+}
 body{
 	text-shadow: 0.5px 0.5px 0.9px #888; 
+}
+h1{
+	text-shadow: 1.2px 1.2px 1.5px #888; 
+}
+h2{
+	text-shadow: 0.6px 0.6px 1px #888; 
+}
+article > header{
+	/*background-color: rgba(128, 128, 128, 0.5);*/
+	background-image: -ms-linear-gradient(top, rgba(128, 128, 128, 0.5) 0%, rgba(128, 128, 128, 0) 50%);
 }
 
 #map{

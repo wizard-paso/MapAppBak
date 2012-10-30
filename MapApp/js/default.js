@@ -18,26 +18,34 @@ var map;
       if (args.detail.previousExecutionState !== activation.ApplicationExecutionState.terminated) {
         // TODO: このアプリケーションは新しく起動しました。ここでアプリケーションを
         // 初期化します。
-        loadModules(function(){
+        var modules=['Microsoft.Maps.Search', 'Microsoft.Maps.Map', 'Microsoft.Maps.Themes.BingTheme']
+        var promises = modules.map(function (module) {
+          return Microsoft.Maps.loadModule(module)
+        });
+
+        WinJS.Promise.join(promises).then(function () {
+          Debug.writeln("finished");
           var mapOptions =
   {
     credentials: 'Ald0G_z2_H1cpKSD5Fqa59tD3RsQI6Q3XeX9CW2aGQ_jlGSeeitTykR_DmQApIKM',
     center: new Microsoft.Maps.Location(34.397517, 132.45373),
     mapTypeId: Microsoft.Maps.MapTypeId.road,
     zoom: 12,
-    theme: new Microsoft.Maps.Themes.BingTheme()
+    theme: new Microsoft.Maps.Themes.BingTheme(),
+    enableSearchLogo: false,
+    enableClickableLogo: false,
+    showDashboard: false
   };
           map = new Microsoft.Maps.Map(document.getElementById("map"), mapOptions);
+          map.addComponent("searchManager", new Microsoft.Maps.Search.SearchManager(map));
+          searchManager = map.getComponent("searchManager");
 
-          loadModules(function () {
+          /* のちにBingMapのPinをinvokeするために、IDを抽出しておく */
+          map.entities.bingEventID = Object.getOwnPropertyNames(map.entities).toString().match(/cm[0-9]+_er_thr/m)[0]
 
-            map.addComponent("searchManager", new Microsoft.Maps.Search.SearchManager(map));
-            searchManager = map.getComponent("searchManager");
+          loadContents();
+        });
 
-            loadContents();
-          },'Microsoft.Maps.Search');
-
-        }, 'Microsoft.Maps.Map', 'Microsoft.Maps.Themes.BingTheme');
 
       } else {
         // TODO: このアプリケーションは中断状態から再度アクティブ化されました。
@@ -65,28 +73,6 @@ var map;
     // args.setPromise() を呼び出してください。
     app.sessionState.history = nav.history;
   };
-  function loadModules(callback) {//引数にコールバックとロードするモジュールをとる
-
-    var loadedModuleCount = 0;  //ロードし終えたモジュールのカウンタ
-    var i //カウンタ
-    try{
-      for (i = 1; i < arguments.length; i++) {
-         Microsoft.Maps.loadModule(arguments[i],{callback:complete})//ロードしていく
-      } 
-    } catch (e) {//ロードエラーが発生した場合、
-      var md = new Windows.UI.Popups.MessageDialog(e.message +"["+i+"]");
-      md.showAsync();
-      callback(i)
-      return
-    }
-
-    function complete(){  //ロードのモジュールを終えるごとに呼び出される関数
-      if(loadedModuleCount>arguments.length-2){  //すべてのモジュールをロードし終えたらコールバックを実行
-        callback(null)
-      }
-    }
-
-  }
 
   function loadContents() {
 
@@ -94,10 +80,10 @@ var map;
 
     /* 読み込むイベントデータの設定 */
     var eventAPIPages = [
-        { key: "Atnd", title: "Atnd", subtitle: "Group Subtitle: 1", backgroundImage: tmpBackgroundImage, description: "Atndだよ", url: "http://api.atnd.org/events/?keyword_or=google,cloud&format=json&count=10", func: funcAtnd },
-        { key: "kokucheese", title: "こくちーず", subtitle: "Group Subtitle: 2", backgroundImage: tmpBackgroundImage, description: "こくちーずよ", url: "http://azusaar.appspot.com/api/kokucheese?count=10", func: funcAtnd },
-        { key: "partake", title: "partake", subtitle: "Group Subtitle: 3", backgroundImage: tmpBackgroundImage, description: "ぱたけ", url: "http://azusaar.appspot.com/api/partake?count=10", func: funcAtnd },
-        { key: "zusaar", title: "zusaar", subtitle: "Group Subtitle: 4", backgroundImage: tmpBackgroundImage, description: "ずさー", url: "http://azusaar.appspot.com/api/zusaar?count=10", func: funcAtnd }
+        { key: "Atnd", title: "Atnd", subtitle: "Group Subtitle: 1", backgroundImage: tmpBackgroundImage, description: "Atndだよ", url: "http://api.atnd.org/events/?keyword_or=google,cloud&format=json&count=100", func: funcAtnd },
+        { key: "kokucheese", title: "こくちーず", subtitle: "Group Subtitle: 2", backgroundImage: tmpBackgroundImage, description: "こくちーずよ", url: "http://azusaar.appspot.com/api/kokucheese?count=100", func: funcAtnd },
+        { key: "partake", title: "partake", subtitle: "Group Subtitle: 3", backgroundImage: tmpBackgroundImage, description: "ぱたけ", url: "http://azusaar.appspot.com/api/partake?count=100", func: funcAtnd },
+        { key: "zusaar", title: "zusaar", subtitle: "Group Subtitle: 4", backgroundImage: tmpBackgroundImage, description: "ずさー", url: "http://azusaar.appspot.com/api/zusaar?count=100", func: funcAtnd }
     ];
 
     /* イベントデータの処理方法 Atnd & Azusaar */
@@ -116,16 +102,23 @@ var map;
       if (!data.group) {
         return
       }
+      if (!data.address ) {
+        data.address=""
+      }
+      if (!data.place) {
+        data.place = ""
+      }
       if (data.lat == undefined || data.lon == undefined) {
-        getLatLon(data.address,
+        var tmpData = data;
+        getLatLon(tmpData.address,
           function (result) {
             //var topResult = ;
             if (result.results[0]) {
-              data.lat = result.results[0].location.latitude;
-              data.lon = result.results[0].location.longitude;
-              setItem(data);
+              tmpData.lat = result.results[0].location.latitude;
+              tmpData.lon = result.results[0].location.longitude;
+              setItem(tmpData);
             } else {
-              setItem(data);
+              setItem(tmpData);
             }
 
           },
@@ -144,76 +137,51 @@ var map;
         where: where,
         count: 1,
         callback: onSuccess,
-        errorCallback: onFailed    //エラーの時GeocodeFailedからではなぜかfuncを呼べないので、ここから呼ぶことに。要検証
+        errorCallback: onFailed
       };
       searchManager.geocode(request);
     }
 
-    // geocode api request success callback
-    function onGeocodeSuccess(result, userData) {
-      if (result) {
-        var find = false;
-        for (var i in result.results) {//取得した座標が東広島内か外かを計算するもう少し良い方法はないか？
-          if (boundHigashi.getNorth() > result.results[i].location.latitude)
-            if (boundHigashi.getEast() > result.results[i].location.longitude)
-              if (boundHigashi.getSouth() < result.results[i].location.latitude)
-                if (boundHigashi.getWest() < result.results[i].location.longitude) {
-                  find = true;
-                  userData.func(result.results[i].location);
-                  break;
-                }
-
-        }
-        if (!find) {//すべての取得座標が東広島以外だったらnullを返す。
-          userData.func(null);
-        }
-      } else {
-        userData.func(null);//結果が返ってこなければnullを返す
-      }
-
-    }
-
     function setItem(formattedData) {
-      /* if lon len undefined... */
+
+      var pushpin = null;
+
+      if (formattedData.lat != undefined && formattedData.lon != undefined) {
+        pushpin = new Microsoft.Maps.Pushpin(new Microsoft.Maps.Location(formattedData.lat, formattedData.lon), null);
+        pushpin.setOptions({
+          icon: 10
+        });
+        map.entities.push(pushpin);
+
+        var infobox = new Microsoft.Maps.Infobox(new Microsoft.Maps.Location(formattedData.lat, formattedData.lon), {
+          height: 100,
+          title: formattedData.title,
+          description: formattedData.description,
+          titleClickHandler: function () {
+
+          },
+          pushpin: pushpin
+        });
+        map.entities.push(infobox);
+      }
 
       Data.items.push({
         group: formattedData.group, title: formattedData.title, subtitle: formattedData.subtitle, description: formattedData.description, content: formattedData.content,
-        backgroundImage: formattedData.backgroundImage
-      });
+        backgroundImage: formattedData.backgroundImage,pushpin:pushpin  //pushpin 参照を渡す
+        });
 
-      var pushpin = new Microsoft.Maps.Pushpin(new Microsoft.Maps.Location(formattedData.lat, formattedData.lon), null);
-      map.entities.push(pushpin);
-
-      var infobox = new Microsoft.Maps.Infobox(new Microsoft.Maps.Location(formattedData.lat, formattedData.lon), {
-        height: 100,
-        title: formattedData.title,
-        description: formattedData.description,
-        titleClickHandler: function () {
-
-        },
-        pushpin: pushpin
-      });
-
-      map.entities.push(infobox);
     }
 
     eventAPIPages.forEach(function (group) {
-     // var tmpItem=item
-      WinJS.xhr({ url: group.url }).done(function complete(receivedData) {
-        //Debug.writeln(JSON.parse(value.response)["event"][0]["address"]);
+      var tmpGroup = group;
+      WinJS.xhr({ url: tmpGroup.url }).done(function complete(receivedData) {
 
-        group.func(group,receivedData);
+        group.func(tmpGroup,receivedData);
 
 
 
       });
     });
-    //addSite();
   }
-
-
-  function addSite(obj) {
-  }
-
   app.start();
 })();

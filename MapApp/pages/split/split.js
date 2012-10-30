@@ -120,7 +120,26 @@
             // 既定では、選択は単一項目に制限されます。
             listView.selection.getItems().done(function updateDetails(items) {
                 if (items.length > 0) {
-                    this._itemSelectionIndex = items[0].index;
+                  this._itemSelectionIndex = items[0].index;
+
+                  /*マップを移動させるコード*/
+
+                  if (items[0].data.pushpin) {
+                    map.setView({
+                      center: items[0].data.pushpin.getLocation(),
+                      zoom: 12
+                    });
+
+                    //クリックイベントを強制発生させる。以下の書き方は汚い。よい方法はないか。
+                    items[0].data.pushpin[map.entities.bingEventID].eventHandlers[2].handler(items[0].data.pushpin[map.entities.bingEventID].eventHandlers[2])
+
+
+                    //以下のようなinvokeは使えない。items[0].data.pushpin.mm$eventsに登録されていないため。
+                    //Microsoft.Maps.Events.invoke(items[0].data.pushpin, 'entitychanged', { entity: items[0].data.pushpin });
+
+                  }
+                  /*マップを移動させるコードここまで*/
+
                     if (this._isSingleColumn()) {
                         // 位置合わせされているか縦方向の場合、選択した項目の詳細が格納された
                         // 新しいページに移動します。
