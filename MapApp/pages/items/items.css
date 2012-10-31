@@ -29,7 +29,7 @@
 
         .itemspage .itemslist .item .item-image {
             -ms-grid-row-span: 2;
-			opacity:0.2;
+			/*opacity:0.2;*/
         }
 
         .itemspage .itemslist .item .item-overlay {

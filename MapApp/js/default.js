@@ -80,10 +80,10 @@ var map;
 
     /* 読み込むイベントデータの設定 */
     var eventAPIPages = [
-        { key: "Atnd", title: "Atnd", subtitle: "Group Subtitle: 1", backgroundImage: tmpBackgroundImage, description: "Atndだよ", url: "http://api.atnd.org/events/?keyword_or=google,cloud&format=json&count=100", func: funcAtnd },
-        { key: "kokucheese", title: "こくちーず", subtitle: "Group Subtitle: 2", backgroundImage: tmpBackgroundImage, description: "こくちーずよ", url: "http://azusaar.appspot.com/api/kokucheese?count=100", func: funcAtnd },
-        { key: "partake", title: "partake", subtitle: "Group Subtitle: 3", backgroundImage: tmpBackgroundImage, description: "ぱたけ", url: "http://azusaar.appspot.com/api/partake?count=100", func: funcAtnd },
-        { key: "zusaar", title: "zusaar", subtitle: "Group Subtitle: 4", backgroundImage: tmpBackgroundImage, description: "ずさー", url: "http://azusaar.appspot.com/api/zusaar?count=100", func: funcAtnd }
+        { key: "Atnd", title: "Atnd", subtitle: "Group Subtitle: 1", backgroundImage: "/images/atnd.png", description: "Atndだよ", url: "http://api.atnd.org/events/?keyword_or=google,cloud&format=json&count=1", func: funcAtnd },
+        { key: "kokucheese", title: "こくちーず", subtitle: "Group Subtitle: 2", backgroundImage: "/images/kokucheese.gif", description: "こくちーずよ", url: "http://azusaar.appspot.com/api/kokucheese?count=1", func: funcAtnd },
+        { key: "partake", title: "partake", subtitle: "Group Subtitle: 3", backgroundImage: tmpBackgroundImage, description: "ぱたけ", url: "http://azusaar.appspot.com/api/partake?count=1", func: funcAtnd },
+        { key: "zusaar", title: "zusaar", subtitle: "Group Subtitle: 4", backgroundImage: tmpBackgroundImage, description: "ずさー", url: "http://azusaar.appspot.com/api/zusaar?count=1", func: funcAtnd }
     ];
 
     /* イベントデータの処理方法 Atnd & Azusaar */
@@ -93,7 +93,7 @@ var map;
       
       ((jsonData["event"]) ? jsonData["event"] : jsonData["events"]).forEach(function (eventData) {
         
-        checkData({group:group, title:eventData.title, subtitle:eventData.address+" "+eventData.place, description:eventData.event_url, content:"", backgroundImage:"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC", lat:eventData.lat, lon:eventData.lon,address:eventData.address });
+        checkData({ group: group, title: eventData.title, subtitle: (eventData.address ? eventData.address+" " : "") + (eventData.place ? eventData.place : ""), description: eventData.event_url, content: "", backgroundImage: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC", lat: eventData.lat, lon: eventData.lon, address: eventData.address });
       })
     }
 
@@ -102,13 +102,7 @@ var map;
       if (!data.group) {
         return
       }
-      if (!data.address ) {
-        data.address=""
-      }
-      if (!data.place) {
-        data.place = ""
-      }
-      if (data.lat == undefined || data.lon == undefined) {
+      if ((data.lat == undefined || data.lon == undefined)&&data.address) {
         var tmpData = data;
         getLatLon(tmpData.address,
           function (result) {
