@@ -19,7 +19,7 @@ h2{
 }
 article > header{
 	/*background-color: rgba(128, 128, 128, 0.5);*/
-	background-image: -ms-linear-gradient(top, rgba(128, 128, 128, 0.8) 0%, rgba(128, 128, 128, 0) 50%);
+	background-image: -ms-linear-gradient(top, rgba(128, 128, 128, 0.8) 0%, rgba(128, 128, 128, 0) 75%);
 }
 
 #map{
