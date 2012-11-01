@@ -2,6 +2,7 @@
 // http://go.microsoft.com/fwlink/?LinkID=232447
 
 var map;
+var searchManager;
 
 (function () {
   "use strict";
@@ -11,40 +12,46 @@ var map;
   var app = WinJS.Application;
   var activation = Windows.ApplicationModel.Activation;
   var nav = WinJS.Navigation;
-  var searchManager;
+  
 
   app.addEventListener("activated", function (args) {
     if (args.detail.kind === activation.ActivationKind.launch) {
       if (args.detail.previousExecutionState !== activation.ApplicationExecutionState.terminated) {
         // TODO: このアプリケーションは新しく起動しました。ここでアプリケーションを
         // 初期化します。
-        var modules=['Microsoft.Maps.Search', 'Microsoft.Maps.Map', 'Microsoft.Maps.Themes.BingTheme']
-        var promises = modules.map(function (module) {
-          return Microsoft.Maps.loadModule(module)
-        });
+        Microsoft.Maps.loadModule('Microsoft.Maps.Map', {
+          callback: function () {
+            var modules = ['Microsoft.Maps.Search', 'Microsoft.Maps.Themes.BingTheme']
+            var promises = modules.map(function (module) {
+              return Microsoft.Maps.loadModule(module)
+            });
 
-        WinJS.Promise.join(promises).then(function () {
-          Debug.writeln("finished");
-          var mapOptions =
-  {
-    credentials: 'Ald0G_z2_H1cpKSD5Fqa59tD3RsQI6Q3XeX9CW2aGQ_jlGSeeitTykR_DmQApIKM',
-    center: new Microsoft.Maps.Location(34.397517, 132.45373),
-    mapTypeId: Microsoft.Maps.MapTypeId.road,
-    zoom: 12,
-    theme: new Microsoft.Maps.Themes.BingTheme(),
-    enableSearchLogo: false,
-    enableClickableLogo: false,
-    showDashboard: false
-  };
-          map = new Microsoft.Maps.Map(document.getElementById("map"), mapOptions);
-          map.addComponent("searchManager", new Microsoft.Maps.Search.SearchManager(map));
-          searchManager = map.getComponent("searchManager");
+            WinJS.Promise.join(promises).then(function () {
+              Debug.writeln("finished");
+              var mapOptions =
+      {
+        credentials: "Ald0G_z2_H1cpKSD5Fqa59tD3RsQI6Q3XeX9CW2aGQ_jlGSeeitTykR_DmQApIKM",//"AjytWVJatD84WDxpFKi8RChPNo2-CpSk_ImbnlmI50zNyIx9TI-wYRoaZ8Df8FSL",//'Ald0G_z2_H1cpKSD5Fqa59tD3RsQI6Q3XeX9CW2aGQ_jlGSeeitTykR_DmQApIKM',
+        center: new Microsoft.Maps.Location(34.397517, 132.45373),
+        mapTypeId: Microsoft.Maps.MapTypeId.road,
+        zoom: 12,
+        theme: new Microsoft.Maps.Themes.BingTheme(),
+        enableSearchLogo: false,
+        enableClickableLogo: false,
+        showDashboard: false
+      };
+              map = new Microsoft.Maps.Map(document.getElementById("map"), mapOptions);
+              map.addComponent("searchManager", new Microsoft.Maps.Search.SearchManager(map));
+              searchManager = map.getComponent("searchManager");
 
-          /* のちにBingMapのPinをinvokeするために、IDを抽出しておく */
-          map.entities.bingEventID = Object.getOwnPropertyNames(map.entities).toString().match(/cm[0-9]+_er_thr/m)[0]
+              /* のちにBingMapのPinをinvokeするために、IDを抽出しておく */
+              map.entities.bingEventID = Object.getOwnPropertyNames(map.entities).toString().match(/cm[0-9]+_er_thr/m)[0]
 
-          loadContents();
-        });
+              //loadContents();
+              Data.loadGroupFromURL("http://api.atnd.org/events/?keyword_or=google,cloud&format=json&count=1");
+            });
+          }
+          })
+
 
 
       } else {
@@ -65,6 +72,11 @@ var map;
       }));
     }
   });
+  /*チャームに追加設定を配置する*/
+  app.onsettings = function (e) {
+    e.detail.applicationcommands = { "addSite": { title: "サイトを追加する", href: "/pages/charm/addSite.html" } };
+    WinJS.UI.SettingsFlyout.populateSettings(e);
+  };
 
   app.oncheckpoint = function (args) {
     // TODO: このアプリケーションは中断しようとしています。ここで中断中に
@@ -178,4 +190,37 @@ var map;
     });
   }
   app.start();
+
+  WinJS.Namespace.define("Utility", {
+    checkURL: checkURL,
+  })
+  function checkURL(node) {
+    var elements = new Array();
+    for (var i = 0; i < node.childNodes.length; i++) {
+      if (node.childNodes[i].nodeType == 1) {
+        elements[node.childNodes[i].getAttribute('id')] = node.childNodes[i];
+      }
+    }
+
+    var url = elements["URLInput"].value //urlDataElement.value
+    var title = elements["titleInput"].value//titleDataElement.value
+
+    var status = elements["status"]
+
+
+    status.innerHTML = "<p>読み込んでいます...</p>";
+
+    Data.checkLoadGroupFromURL(url, function (succeeded) {
+      if (succeeded) {
+        status.innerHTML = "<p>読み込みに成功しました。</p>"
+        Data.loadGroupFromURL(url,title)
+      } else {
+        status.innerHTML = "<p>読み込みに失敗しました。</p>"
+      }
+    })
+    Debug.writeln(title)
+
+    Debug.writeln("testes");
+  }
+
 })();

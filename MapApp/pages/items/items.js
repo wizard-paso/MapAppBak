@@ -51,7 +51,26 @@
 
         _itemInvoked: function (args) {
           var groupKey = Data.groups.getAt(args.detail.itemIndex).key;
-            WinJS.Navigation.navigate("/pages/split/split.html", { groupKey: groupKey });
+          WinJS.Navigation.navigate("/pages/split/split.html", { groupKey: groupKey });
+
+          /* アイテムがクリックされるとpinを更新させる。 */
+
+          Data.items.forEach(function (item) {
+            if (item.pushpin) {
+              item.pushpin[map.entities.bingEventID].iconData.iconStyle = 0
+              Microsoft.Maps.Events.invoke(item.pushpin, 'entitychanged', { entity: item.pushpin });
+            }
+          })
+          Data.getItemsFromGroup({key:groupKey}).forEach(function (item) {
+            if (item.pushpin) {
+              item.pushpin[map.entities.bingEventID].iconData.iconStyle = 55
+              Microsoft.Maps.Events.invoke(item.pushpin, 'entitychanged', { entity: item.pushpin });
+            }
+          })
+        
+
+          /*  */
+
         }
     });
 })();

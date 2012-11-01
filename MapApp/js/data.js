@@ -19,7 +19,9 @@
     getItemReference: getItemReference,
     getItemsFromGroup: getItemsFromGroup,
     resolveGroupReference: resolveGroupReference,
-    resolveItemReference: resolveItemReference
+    resolveItemReference: resolveItemReference,
+    loadGroupFromURL: loadGroupFromURL,
+    checkLoadGroupFromURL:checkLoadGroupFromURL
   });
 
   // 項目の参照を取得します。グループ キーと項目のタイトルを
@@ -54,6 +56,135 @@
     }
   }
 
+  function loadGroupFromURL(url,title) {
+    if (!url || url == "") {
+      return  //error
+    }
+    /*if(typeof json!=object){
+      json=JSON.parse(json)
+    }*/
+    WinJS.xhr({ url: url }).done(function complete(receivedData) {
+      var jsonData = JSON.parse(receivedData.response);
+      var group = {
+        key: url,
+        title: (title?title:(jsonData.title ? jsonData.title : jsonData.url)),
+        subtitle: (jsonData.subtitle ? jsonData.subtitle : ""),
+        backgroundImage: (jsonData.image ? jsonData.image : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC"),
+        url: url
+      };
+       
+      
+      ((jsonData["event"]) ? jsonData["event"] : jsonData["events"]).forEach(function (eventData) {
+        eventData.group=group
+        checkData(eventData);
+      })
+    });
+
+    function checkData(data) {
+      if (!data.group) {
+        return  //error
+      }
+      if (!data.subtitle) {
+        data.subtitle = toStaticHTML((data.address ? data.address + " " : "") + (data.place ? data.place : ""));
+      }
+      if (!data.description) {
+        data.description = (data.event_url ? data.event_url : "")
+      } else {
+        data.description = toStaticHTML(data.description.substring(0, 100));
+      }
+      if (!data.image) {
+        data.image= "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC"
+      }
+      /* undefinedの場合に空の文字列にする要素を設定 */
+      ["title", "content"].forEach(function (element) {
+        if (!data[element]) {
+          data[element] = "";
+        }
+        data[element]=toStaticHTML(data[element])
+      })
+
+      if ((!data.lat || !data.lon) && data.address) {
+        var tmpData = data;
+        getLatLon(tmpData.address,
+          function (result) {
+            //var topResult = ;
+            if (result.results[0]) {
+              tmpData.lat = result.results[0].location.latitude;
+              tmpData.lon = result.results[0].location.longitude;
+              setItem(tmpData);
+            } else {
+              setItem(tmpData);
+            }
+
+          },
+          function () { return });
+      } else {
+        setItem(data);
+      }
+
+    }
+    // geocode api request
+    function getLatLon(word, onSuccess, onFailed) {
+      var where = word;
+
+      var request =
+      {
+        where: where,
+        count: 1,
+        callback: onSuccess,
+        errorCallback: onFailed
+      };
+      searchManager.geocode(request);
+    }
+
+    function setItem(formattedData) {
+
+      var pushpin = null;
+
+      if (formattedData.lat != undefined && formattedData.lon != undefined) {
+        pushpin = new Microsoft.Maps.Pushpin(new Microsoft.Maps.Location(formattedData.lat, formattedData.lon), null);
+        pushpin.setOptions({
+          //icon: 0//iconの画像までのパス いずれはAPIで指定されたURLのアイコンをここに
+          //typeName:"micro"
+        });
+        map.entities.push(pushpin);
+
+        var infobox = new Microsoft.Maps.Infobox(new Microsoft.Maps.Location(formattedData.lat, formattedData.lon), {
+          height: 100,
+          title: formattedData.title,
+          description: formattedData.description,
+          titleClickHandler: function () {
+
+          },
+          pushpin: pushpin
+        });
+        map.entities.push(infobox);
+      }
+
+      Data.items.push({
+        group: formattedData.group, title: formattedData.title, subtitle: formattedData.subtitle, description: formattedData.description, content: formattedData.content,
+        backgroundImage: formattedData.image, pushpin: pushpin  //pushpin 参照を渡す
+      });
+
+    }
+
+  }
+  function checkLoadGroupFromURL(url,callback) {
+
+    WinJS.xhr({ url: url }).done(function complete(receivedData) {
+      var jsonData = JSON.parse(receivedData.response);
+      if (jsonData["event"]&&jsonData["event"] instanceof Array) {
+        callback(true)
+      } else if (jsonData["events"] && jsonData["events"] instanceof Array) {
+        callback(true)
+      } else {
+        callback(false)
+      }
+      
+    },function error(request) {
+      callback(false)
+    })
+  }
 
 
   // アプリケーションのデータ リストに追加できるサンプル データの配列を

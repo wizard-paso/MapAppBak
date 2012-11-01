@@ -132,7 +132,8 @@
 
                     //クリックイベントを強制発生させる。以下の書き方は汚い。よい方法はないか。
                     items[0].data.pushpin[map.entities.bingEventID].eventHandlers[2].handler(items[0].data.pushpin[map.entities.bingEventID].eventHandlers[2])
-
+                    //items[0].data.pushpin[map.entities.bingEventID].iconData.iconStyle=55
+                    //items[0].data.pushpin[map.entities.bingEventID].
 
                     //以下のようなinvokeは使えない。items[0].data.pushpin.mm$eventsに登録されていないため。
                     //Microsoft.Maps.Events.invoke(items[0].data.pushpin, 'entitychanged', { entity: items[0].data.pushpin });
