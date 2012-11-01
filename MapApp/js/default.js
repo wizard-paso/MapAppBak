@@ -19,6 +19,7 @@ var searchManager;
       if (args.detail.previousExecutionState !== activation.ApplicationExecutionState.terminated) {
         // TODO: このアプリケーションは新しく起動しました。ここでアプリケーションを
         // 初期化します。
+
         Microsoft.Maps.loadModule('Microsoft.Maps.Map', {
           callback: function () {
             var modules = ['Microsoft.Maps.Search', 'Microsoft.Maps.Themes.BingTheme']
@@ -47,6 +48,7 @@ var searchManager;
               map.entities.bingEventID = Object.getOwnPropertyNames(map.entities).toString().match(/cm[0-9]+_er_thr/m)[0]
 
               //loadContents();
+              initialize();
               Data.loadGroupFromURL("http://api.atnd.org/events/?keyword_or=google,cloud&format=json&count=1");
             });
           }
@@ -85,122 +87,68 @@ var searchManager;
     // args.setPromise() を呼び出してください。
     app.sessionState.history = nav.history;
   };
+  function initialize() {
+    document.getElementById("changeMapButton").addEventListener("click", clickChangeMap, false);
 
-  function loadContents() {
+    //var appBar = document.getElementById("appbar").winControl;
+    //appBar.hideCommands(document.getElementById("appbar").querySelectorAll('.singleSelect'));
 
-    var tmpBackgroundImage= "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC"
 
-    /* 読み込むイベントデータの設定 */
-    var eventAPIPages = [
-        { key: "Atnd", title: "Atnd", subtitle: "Group Subtitle: 1", backgroundImage: "/images/atnd.png", description: "Atndだよ", url: "http://api.atnd.org/events/?keyword_or=google,cloud&format=json&count=1", func: funcAtnd },
-        { key: "kokucheese", title: "こくちーず", subtitle: "Group Subtitle: 2", backgroundImage: "/images/kokucheese.gif", description: "こくちーずよ", url: "http://azusaar.appspot.com/api/kokucheese?count=1", func: funcAtnd },
-        { key: "partake", title: "partake", subtitle: "Group Subtitle: 3", backgroundImage: tmpBackgroundImage, description: "ぱたけ", url: "http://azusaar.appspot.com/api/partake?count=1", func: funcAtnd },
-        { key: "zusaar", title: "zusaar", subtitle: "Group Subtitle: 4", backgroundImage: tmpBackgroundImage, description: "ずさー", url: "http://azusaar.appspot.com/api/zusaar?count=1", func: funcAtnd }
-    ];
+    //var appBarDiv = document.getElementById("appbar");
+    //appBarDiv.winControl.hideCommands(appBarDiv.querySelectorAll('.singleSelect'));
 
-    /* イベントデータの処理方法 Atnd & Azusaar */
-    function funcAtnd(group,receivedData) {
 
-      var jsonData = JSON.parse(receivedData.response);
-      
-      ((jsonData["event"]) ? jsonData["event"] : jsonData["events"]).forEach(function (eventData) {
-        
-        checkData({ group: group, title: eventData.title, subtitle: (eventData.address ? eventData.address+" " : "") + (eventData.place ? eventData.place : ""), description: eventData.event_url, content: "", backgroundImage: "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC", lat: eventData.lat, lon: eventData.lon, address: eventData.address });
-      })
-    }
+    //document.getElementById("itemslist").winControl.addEventListener("selectionchanged", selectionChanged, false);
 
-    function checkData(data) {
-      //data.forEach(function (value) { })
-      if (!data.group) {
-        return
-      }
-      if ((data.lat == undefined || data.lon == undefined)&&data.address) {
-        var tmpData = data;
-        getLatLon(tmpData.address,
-          function (result) {
-            //var topResult = ;
-            if (result.results[0]) {
-              tmpData.lat = result.results[0].location.latitude;
-              tmpData.lon = result.results[0].location.longitude;
-              setItem(tmpData);
-            } else {
-              setItem(tmpData);
-            }
+    
 
-          },
-          function () {return});
+    function selectionChanged(event) {
+      var listView = event.currentTarget.winControl;
+      var appBar = document.getElementById("appbar").winControl;
+
+      if (listView.selection.count() > 0) {
+
+        // sticky, openプロパティを設定しないと、複数選択した時にAppBarが隠れてしまう。
+        appBar.sticky = true;
+        appBar.open = true;
+        // ここでAppBarが表示される。
+        appBar.show();
       } else {
-        setItem(data);
+        appBar.sticky = false;
+        appBar.open = false;
       }
-      
-    }
-    // geocode api request
-    function getLatLon(word, onSuccess,onFailed) {
-      var where = word;
-
-      var request =
-      {
-        where: where,
-        count: 1,
-        callback: onSuccess,
-        errorCallback: onFailed
-      };
-      searchManager.geocode(request);
     }
 
-    function setItem(formattedData) {
+    //document.getElementById("changePicture").addEventListener("click", clickChangeMap, false);
 
-      var pushpin = null;
-
-      if (formattedData.lat != undefined && formattedData.lon != undefined) {
-        pushpin = new Microsoft.Maps.Pushpin(new Microsoft.Maps.Location(formattedData.lat, formattedData.lon), null);
-        pushpin.setOptions({
-          icon: 10
-        });
-        map.entities.push(pushpin);
-
-        var infobox = new Microsoft.Maps.Infobox(new Microsoft.Maps.Location(formattedData.lat, formattedData.lon), {
-          height: 100,
-          title: formattedData.title,
-          description: formattedData.description,
-          titleClickHandler: function () {
-
-          },
-          pushpin: pushpin
-        });
-        map.entities.push(infobox);
+    function clickChangeMap() {
+      if (map.getMapTypeId() == Microsoft.Maps.MapTypeId.road) {
+        map.setMapType(Microsoft.Maps.MapTypeId.aerial);
+        document.getElementById("changeMapButton").winControl.label = '道路';
+      } else {
+        map.setMapType(Microsoft.Maps.MapTypeId.road);
+        document.getElementById("changeMapButton").winControl.label = '航空写真';
       }
-
-      Data.items.push({
-        group: formattedData.group, title: formattedData.title, subtitle: formattedData.subtitle, description: formattedData.description, content: formattedData.content,
-        backgroundImage: formattedData.backgroundImage,pushpin:pushpin  //pushpin 参照を渡す
-        });
-
     }
 
-    eventAPIPages.forEach(function (group) {
-      var tmpGroup = group;
-      WinJS.xhr({ url: tmpGroup.url }).done(function complete(receivedData) {
-
-        group.func(tmpGroup,receivedData);
-
-
-
-      });
-    });
   }
   app.start();
 
   WinJS.Namespace.define("Utility", {
     checkURL: checkURL,
+    loadImage:loadImage
   })
-  function checkURL(node) {
+  function getElements(node) {
     var elements = new Array();
     for (var i = 0; i < node.childNodes.length; i++) {
       if (node.childNodes[i].nodeType == 1) {
         elements[node.childNodes[i].getAttribute('id')] = node.childNodes[i];
       }
     }
+    return elements
+  }
+  function checkURL(node) {
+    var elements = getElements(node)
 
     var url = elements["URLInput"].value //urlDataElement.value
     var title = elements["titleInput"].value//titleDataElement.value
@@ -221,6 +169,39 @@ var searchManager;
     Debug.writeln(title)
 
     Debug.writeln("testes");
+  }
+  function loadImage(node) {
+    var elements = getElements(node)
+
+
+      var picker = new Windows.Storage.Pickers.FileOpenPicker();
+      picker.fileTypeFilter.replaceAll([".jpg", ".bmp", ".gif", ".png"]);
+      picker.pickSingleFileAsync().then(processResults, displayError);
+    
+    function processResults(file) {
+
+      // Check that the picker returned a file. 
+      // The picker returns null if the user clicked Cancel.
+      if (file) {
+        var imageBlob = URL.createObjectURL(file);
+        elements["imageControl"].src = imageBlob;
+
+
+        elements["imageInformation"].innerText =
+        "The src of the first image has been set to " + file.name;
+
+        // Release the blob resources.
+        URL.revokeObjectURL(imageBlob);
+      } else {
+        elements["imageInformation"].innerText = "An image wasn't selected.";
+      }
+    }
+    function displayError(error) {
+      if (imageBlob) {
+        URL.revokeObjectURL(imageBlob);
+      }
+      document.getElementById("imageInformation").innerText = error;
+    }
   }
 
 })();
