@@ -17,8 +17,14 @@
 			<div id="form">
             <input id="titleInput" type="text" placeholder="名前(省略可能)"/>
 			<input id="URLInput" type="text" placeholder="http://JSONのAPIアドレス"/>
-			
-			<button id="addSiteButton" onClick="Utility.checkURL(document.getElementById('form'))">追加</button>
+<!--
+			<div id="imagePicker">
+			<img id="imageControl" src="placeholder.png" alt="画像" />
+			<button id="selectImageButton" onClick="Utility.loadImage(document.getElementById('imagePicker'))">画像の選択</button>
+			<p id="imageInformation"></p>
+			</div>
+    -->
+			<button id="addSiteButton" onClick="Utility.checkURL(document.getElementById('form'))">受信APIの追加</button>
             
 
 			<div id="status"></div>

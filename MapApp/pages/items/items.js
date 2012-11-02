@@ -15,6 +15,35 @@
 
             this._initializeLayout(listView, Windows.UI.ViewManagement.ApplicationView.value);
             listView.element.focus();
+
+            var appBar = document.getElementById("appbar").winControl;
+            appBar.hideCommands(document.getElementById("appbar").querySelectorAll('.singleSelect'));//singleSelectを隠す処理
+            listView.addEventListener("selectionchanged", onSelectionChanged, false); //ページを切り替えるごとにリスナーが消えるので、ここにaddEventListenerが必要
+
+
+            function onSelectionChanged(event) {
+               
+              var listView = event.currentTarget.winControl;
+
+              var appBar = document.getElementById("appbar").winControl;
+              if (listView.selection.count() == 1) {
+                
+                appBar.showCommands(document.getElementById("appbar").querySelectorAll('.singleSelect'));
+
+                var items = listView.selection.getItems()
+                Debug.writeln(items._value[0].key)
+                //loadImage(Data.resolveGroupReference(items._value[0].key));
+                //var item=listView.selection.selected.getItems()
+
+                // ここでAppBarが表示される。
+                appBar.show();
+
+              } else {
+                appBar.hide();
+                appBar.hideCommands(document.getElementById("appbar").querySelectorAll('.singleSelect'));
+              }
+              }
+
         },
 
         // この関数は、viewState の変更に応じてページ レイアウトを更新します。
@@ -73,4 +102,38 @@
 
         }
     });
+
+    function loadImage(group) {
+      //var elements = getElements(node)
+
+
+      var picker = new Windows.Storage.Pickers.FileOpenPicker();
+      picker.fileTypeFilter.replaceAll([".jpg", ".bmp", ".gif", ".png"]);
+      picker.pickSingleFileAsync().then(processResults, displayError);
+
+      function processResults(file) {
+
+        // Check that the picker returned a file. 
+        // The picker returns null if the user clicked Cancel.
+        if (file) {
+          var imageBlob = URL.createObjectURL(file);
+          group.backgroundImage=imageBlob
+          //elements["imageControl"].src = imageBlob;
+
+
+          //elements["imageInformation"].innerText =          "The src of the first image has been set to " + file.name;
+
+          // Release the blob resources.
+          URL.revokeObjectURL(imageBlob);
+        } else {
+         // elements["imageInformation"].innerText = "An image wasn't selected.";
+        }
+      }
+      function displayError(error) {
+        if (imageBlob) {
+          URL.revokeObjectURL(imageBlob);
+        }
+        //document.getElementById("imageInformation").innerText = error;
+      }
+    }
 })();

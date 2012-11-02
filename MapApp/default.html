@@ -26,8 +26,11 @@
 <body>
     <div id="map"></div>
     <div id="contenthost" data-win-control="Application.PageControlNavigator" data-win-options="{home: '/pages/items/items.html'}"></div>
-    <!-- <div id="appbar" data-win-control="WinJS.UI.AppBar">
-        <button data-win-control="WinJS.UI.AppBarCommand" data-win-options="{id:'cmd', label:'Command', icon:'placeholder'}" type="button"></button>
-    </div> -->
+    <div id="appbar" data-win-control="WinJS.UI.AppBar">
+        <button id="changeImage" data-win-control="WinJS.UI.AppBarCommand" data-win-options="{id:'changeImage',label:'画像',icon:'pictures',section:'selection',extraClass:'singleSelect',tooltip:'タイルの画像を変更します。'}">
+        </button>
+        <button id="changeMapButton" data-win-control="WinJS.UI.AppBarCommand" data-win-options="{id:'changeMap',label:'航空写真',icon:'switch',section:'global',tooltip:'地図の種類を変更します。'}">
+        </button>
+    </div>
 </body>
 </html>

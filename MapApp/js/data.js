@@ -60,9 +60,6 @@
     if (!url || url == "") {
       return  //error
     }
-    /*if(typeof json!=object){
-      json=JSON.parse(json)
-    }*/
     WinJS.xhr({ url: url }).done(function complete(receivedData) {
       var jsonData = JSON.parse(receivedData.response);
       var group = {
