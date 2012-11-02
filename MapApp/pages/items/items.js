@@ -10,11 +10,45 @@
         ready: function (element, options) {
             var listView = element.querySelector(".itemslist").winControl;
             listView.itemDataSource = Data.groups.dataSource;
-            listView.itemTemplate = element.querySelector(".itemtemplate");
+            listView.itemTemplate = itemTemplateFunction//element.querySelector(".itemtemplate");
             listView.oniteminvoked = this._itemInvoked.bind(this);
 
             this._initializeLayout(listView, Windows.UI.ViewManagement.ApplicationView.value);
             listView.element.focus();
+
+
+            function itemTemplateFunction(itemPromise) {
+
+              return itemPromise.then(function (item) {
+                var div = document.createElement("div");
+                div.className="item"
+
+                var img = document.createElement("img");
+                img.className="item-image"
+                img.src = item.data.backgroundImage;
+                img.alt = item.data.title;
+                div.appendChild(img);
+
+                var childDiv = document.createElement("div");
+                childDiv.className="item-overlay"
+
+                var title = document.createElement("h4");
+                title.className="item-title"
+                title.innerText = item.data.title;
+                childDiv.appendChild(title);
+
+                var desc = document.createElement("h6");
+                desc.className="item-subtitle win-type-ellipsis"
+                desc.innerText = item.data.subtitle;
+                childDiv.appendChild(desc);
+
+                div.appendChild(childDiv);
+                
+                URL.revokeObjectURL(item.data.backgroundImage);
+
+                return div;
+              });
+            };
 
             var appBar = document.getElementById("appbar").winControl;
             appBar.hideCommands(document.getElementById("appbar").querySelectorAll('.singleSelect'));//singleSelectを隠す処理
