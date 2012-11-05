@@ -1,11 +1,36 @@
 ﻿(function () {
   "use strict";
 
-  var list = new WinJS.Binding.List();
+  var originalList = new WinJS.Binding.List();
+
+  var list = originalList.createSorted(
+    function(first, second) {
+      if (first.time == second.time)
+      return 0;
+      else if (first.time > second.time)
+      return 1;
+    else
+      return -1;
+    });
+
   var groupedItems = list.createGrouped(
       function groupKeySelector(item) { return ((item.group) ? item.group.key : null); },
       function groupDataSelector(item) { return item.group; }
   );
+
+  //ローカルストレージにあるファイルと同期させるデータ
+  var groupsData = { groups: [] }
+
+  //色。お遊び
+    var color = [
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWP4v0z0PwAHHAK6PrQwrwAAAABJRU5ErkJggg==",
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWMwNjb+DwACzwGZM+tEvwAAAABJRU5ErkJggg==",
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWMwNjb+DwACzwGZM+tEvwAAAABJRU5ErkJggg==",
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWMwNjb+DwACzwGZM+tEvwAAAABJRU5ErkJggg==",
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWMwNjb+DwACzwGZM+tEvwAAAABJRU5ErkJggg==",
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWMwNjb+DwACzwGZM+tEvwAAAABJRU5ErkJggg==",
+      "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWNgcDnzHwADaAIQR5SNSgAAAABJRU5ErkJggg==",
+]
 
   // TODO: データを実際のデータに置き換えます。
   // 非同期ソースのデータは使用可能になるたびに追加できます。
@@ -21,7 +46,12 @@
     resolveGroupReference: resolveGroupReference,
     resolveItemReference: resolveItemReference,
     loadGroupFromURL: loadGroupFromURL,
-    checkLoadGroupFromURL:checkLoadGroupFromURL
+    checkLoadGroupFromURL: checkLoadGroupFromURL,
+    setGroupImage: setGroupImage,
+    groupsData: groupsData,
+    deleteGroup: deleteGroup,
+    addURLData: addURLData,
+    refreshItem: refreshItem,
   });
 
   // 項目の参照を取得します。グループ キーと項目のタイトルを
@@ -56,27 +86,47 @@
     }
   }
 
-  function loadGroupFromURL(url,title) {
+  //URLからグループをロードする
+  function loadGroupFromURL(url,inputData) {
     if (!url || url == "") {
       return  //error
     }
     WinJS.xhr({ url: url }).done(function complete(receivedData) {
-      var jsonData = JSON.parse(receivedData.response);
-      var group = {
-        key: url,
-        title: (title?title:(jsonData.title ? jsonData.title : jsonData.url)),
-        subtitle: (jsonData.subtitle ? jsonData.subtitle : ""),
-        backgroundImage: (jsonData.image ? jsonData.image : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC"),
-        url: url
-      };
+      try{
+        var jsonData = JSON.parse(receivedData.response);
+        var group = {
+          key: url,
+          title: (inputData.title ? inputData.title : (jsonData.title ? jsonData.title : url)),
+          subtitle: (inputData.subtitle?inputData.subtitle:(jsonData.subtitle ? jsonData.subtitle : "")),
+          backgroundImage: (jsonData.image ? jsonData.image : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC"),
+          url: url
+        };
        
       
-      ((jsonData["event"]) ? jsonData["event"] : jsonData["events"]).forEach(function (eventData) {
-        eventData.group=group
-        checkData(eventData);
-      })
-    });
+        ((jsonData["event"]) ? jsonData["event"] : jsonData["events"]).forEach(function (eventData) {
+          eventData.group=group
+          checkData(eventData);
+        })
+      } catch (error) {
+        return;
+      }
+    },
+    function error() {
+      var msg = new Windows.UI.Popups.MessageDialog(
+    "インターネットに接続していないと、このアプリケーションは使用できません。");
 
+      // Add commands and set their command handlers
+      msg.commands.append(
+          new Windows.UI.Popups.UICommand("閉じる", function () {window.close()}));
+
+
+      // Show the message dialog
+      msg.showAsync();
+      // handle error conditions.
+    }
+    );
+
+    //受信したデータを正しい形に調整する
     function checkData(data) {
       if (!data.group) {
         return  //error
@@ -85,13 +135,34 @@
         data.subtitle = toStaticHTML((data.address ? data.address + " " : "") + (data.place ? data.place : ""));
       }
       if (!data.description) {
-        data.description = (data.event_url ? data.event_url : "")
+        data.description = (data.event_url ? data.event_url : (data.url ? data.url : ""))
       } else {
         data.description = toStaticHTML(data.description.substring(0, 100));
       }
-      if (!data.image) {
-        data.image= "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC"
+      if (!data.url) {
+        data.url = (data.event_url ? data.event_url : "")
       }
+      if (!data.date) {
+        data.date = (data.started_at ? data.started_at : (data.ended_at ? data.ended_at : (data.updated_at ? data.updated_at : undefined)))
+      }
+      if (data.date) {
+        if (data.date = new Date(data.date)) {
+          data.month = data.date.getMonth() + 1;
+          data.day = data.date.getDate();
+          data.time = data.date.getTime();
+          if (!data.image) {
+            data.image =color[data.date.getDay()]
+          }
+        } else {
+          data.month = data.day = "";
+        }
+      } else {
+        data.month = data.day = "";
+      }
+      if (!data.image) {
+        data.image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC"
+      }
+
       /* undefinedの場合に空の文字列にする要素を設定 */
       ["title", "content"].forEach(function (element) {
         if (!data[element]) {
@@ -120,7 +191,8 @@
       }
 
     }
-    // geocode api request
+
+    //住所をもとにジオコーダーから座標を取得する
     function getLatLon(word, onSuccess, onFailed) {
       var where = word;
 
@@ -134,6 +206,7 @@
       searchManager.geocode(request);
     }
 
+    //データをマップおよびリストにセットする
     function setItem(formattedData) {
 
       var pushpin = null;
@@ -151,7 +224,8 @@
           title: formattedData.title,
           description: formattedData.description,
           titleClickHandler: function () {
-
+            
+            window.navigate(formattedData.url);
           },
           pushpin: pushpin
         });
@@ -160,115 +234,169 @@
 
       Data.items.push({
         group: formattedData.group, title: formattedData.title, subtitle: formattedData.subtitle, description: formattedData.description, content: formattedData.content,
-        backgroundImage: formattedData.image, pushpin: pushpin  //pushpin 参照を渡す
+        backgroundImage: formattedData.image, url: formattedData.url,month: formattedData.month,day: formattedData.day,time: formattedData.time, pushpin: pushpin  //pushpin 参照を渡す
       });
 
+      var key = formattedData.group.key
+      StorageData.loadImage(Data.resolveGroupReference(key),
+        function (image) {
+          Data.setGroupImage(Data.resolveGroupReference(key), image);
+        }, function () { }
+        )
     }
-
   }
-  function checkLoadGroupFromURL(url,callback) {
+
+  //URLがきちんとしたJSON形式かチェックする
+  function checkLoadGroupFromURL(url, successCallback, errorCallback) {
 
     WinJS.xhr({ url: url }).done(function complete(receivedData) {
       var jsonData = JSON.parse(receivedData.response);
       if (jsonData["event"]&&jsonData["event"] instanceof Array) {
-        callback(true)
+        successCallback()
       } else if (jsonData["events"] && jsonData["events"] instanceof Array) {
-        callback(true)
+        successCallback()
       } else {
-        callback(false)
+        errorCallback()
       }
       
     },function error(request) {
-      callback(false)
+      errorCallback()
     })
   }
 
+  //グループの画像を設定する
+  function setGroupImage(group, image) {
+    try {
+      //以前使用していたオブジェクトに対するURLを開放する
+      URL.revokeObjectURL(group.backgroundImage);
+      var imageBlob = URL.createObjectURL(image);
+      group.backgroundImage = imageBlob
+    } catch (error) {
 
-  // アプリケーションのデータ リストに追加できるサンプル データの配列を
-  // 返します。 
-  function generateSampleData() {
-    var itemContent = "<p>Curabitur class aliquam vestibulum nam curae maecenas sed integer cras phasellus suspendisse quisque donec dis praesent accumsan bibendum pellentesque condimentum adipiscing etiam consequat vivamus dictumst aliquam duis convallis scelerisque est parturient ullamcorper aliquet fusce suspendisse nunc hac eleifend amet blandit facilisi condimentum commodo scelerisque faucibus aenean ullamcorper ante mauris dignissim consectetuer nullam lorem vestibulum habitant conubia elementum pellentesque morbi facilisis arcu sollicitudin diam cubilia aptent vestibulum auctor eget dapibus pellentesque inceptos leo egestas interdum nulla consectetuer suspendisse adipiscing pellentesque proin lobortis sollicitudin augue elit mus congue fermentum parturient fringilla euismod feugiat</p><p>Curabitur class aliquam vestibulum nam curae maecenas sed integer cras phasellus suspendisse quisque donec dis praesent accumsan bibendum pellentesque condimentum adipiscing etiam consequat vivamus dictumst aliquam duis convallis scelerisque est parturient ullamcorper aliquet fusce suspendisse nunc hac eleifend amet blandit facilisi condimentum commodo scelerisque faucibus aenean ullamcorper ante mauris dignissim consectetuer nullam lorem vestibulum habitant conubia elementum pellentesque morbi facilisis arcu sollicitudin diam cubilia aptent vestibulum auctor eget dapibus pellentesque inceptos leo egestas interdum nulla consectetuer suspendisse adipiscing pellentesque proin lobortis sollicitudin augue elit mus congue fermentum parturient fringilla euismod feugiat</p><p>Curabitur class aliquam vestibulum nam curae maecenas sed integer cras phasellus suspendisse quisque donec dis praesent accumsan bibendum pellentesque condimentum adipiscing etiam consequat vivamus dictumst aliquam duis convallis scelerisque est parturient ullamcorper aliquet fusce suspendisse nunc hac eleifend amet blandit facilisi condimentum commodo scelerisque faucibus aenean ullamcorper ante mauris dignissim consectetuer nullam lorem vestibulum habitant conubia elementum pellentesque morbi facilisis arcu sollicitudin diam cubilia aptent vestibulum auctor eget dapibus pellentesque inceptos leo egestas interdum nulla consectetuer suspendisse adipiscing pellentesque proin lobortis sollicitudin augue elit mus congue fermentum parturient fringilla euismod feugiat</p><p>Curabitur class aliquam vestibulum nam curae maecenas sed integer cras phasellus suspendisse quisque donec dis praesent accumsan bibendum pellentesque condimentum adipiscing etiam consequat vivamus dictumst aliquam duis convallis scelerisque est parturient ullamcorper aliquet fusce suspendisse nunc hac eleifend amet blandit facilisi condimentum commodo scelerisque faucibus aenean ullamcorper ante mauris dignissim consectetuer nullam lorem vestibulum habitant conubia elementum pellentesque morbi facilisis arcu sollicitudin diam cubilia aptent vestibulum auctor eget dapibus pellentesque inceptos leo egestas interdum nulla consectetuer suspendisse adipiscing pellentesque proin lobortis sollicitudin augue elit mus congue fermentum parturient fringilla euismod feugiat</p><p>Curabitur class aliquam vestibulum nam curae maecenas sed integer cras phasellus suspendisse quisque donec dis praesent accumsan bibendum pellentesque condimentum adipiscing etiam consequat vivamus dictumst aliquam duis convallis scelerisque est parturient ullamcorper aliquet fusce suspendisse nunc hac eleifend amet blandit facilisi condimentum commodo scelerisque faucibus aenean ullamcorper ante mauris dignissim consectetuer nullam lorem vestibulum habitant conubia elementum pellentesque morbi facilisis arcu sollicitudin diam cubilia aptent vestibulum auctor eget dapibus pellentesque inceptos leo egestas interdum nulla consectetuer suspendisse adipiscing pellentesque proin lobortis sollicitudin augue elit mus congue fermentum parturient fringilla euismod feugiat</p><p>Curabitur class aliquam vestibulum nam curae maecenas sed integer cras phasellus suspendisse quisque donec dis praesent accumsan bibendum pellentesque condimentum adipiscing etiam consequat vivamus dictumst aliquam duis convallis scelerisque est parturient ullamcorper aliquet fusce suspendisse nunc hac eleifend amet blandit facilisi condimentum commodo scelerisque faucibus aenean ullamcorper ante mauris dignissim consectetuer nullam lorem vestibulum habitant conubia elementum pellentesque morbi facilisis arcu sollicitudin diam cubilia aptent vestibulum auctor eget dapibus pellentesque inceptos leo egestas interdum nulla consectetuer suspendisse adipiscing pellentesque proin lobortis sollicitudin augue elit mus congue fermentum parturient fringilla euismod feugiat</p><p>Curabitur class aliquam vestibulum nam curae maecenas sed integer cras phasellus suspendisse quisque donec dis praesent accumsan bibendum pellentesque condimentum adipiscing etiam consequat vivamus dictumst aliquam duis convallis scelerisque est parturient ullamcorper aliquet fusce suspendisse nunc hac eleifend amet blandit facilisi condimentum commodo scelerisque faucibus aenean ullamcorper ante mauris dignissim consectetuer nullam lorem vestibulum habitant conubia elementum pellentesque morbi facilisis arcu sollicitudin diam cubilia aptent vestibulum auctor eget dapibus pellentesque inceptos leo egestas interdum nulla consectetuer suspendisse adipiscing pellentesque proin lobortis sollicitudin augue elit mus congue fermentum parturient fringilla euismod feugiat";
-    var itemDescription = "Item Description: Pellentesque porta mauris quis interdum vehicula urna sapien ultrices velit nec venenatis dui odio in augue cras posuere enim a cursus convallis neque turpis malesuada erat ut adipiscing neque tortor ac erat";
-    var groupDescription = "Group Description: Lorem ipsum dolor sit amet, consectetur adipiscing elit. Vivamus tempor scelerisque lorem in vehicula. Aliquam tincidunt, lacus ut sagittis tristique, turpis massa volutpat augue, eu rutrum ligula ante a ante";
+    }
+  }
 
-    // これらの 3 つの文字列は、プレースホルダー イメージをエンコードします。
-    // 実際のデータで backgroundImage プロパティをイメージの URL に設定できます。
-    var darkGray = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC";
-    var lightGray = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY7h4+cp/AAhpA3h+ANDKAAAAAElFTkSuQmCC";
-    var mediumGray = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY5g8dcZ/AAY/AsAlWFQ+AAAAAElFTkSuQmCC";
+  //該当するグループに所属するアイテムを削除する
+  function deleteGroup(group) {
+    //Itemを削除
+    getItemsFromGroup(group).splice(0, getItemsFromGroup(group).length)
+    StorageData.deleteImage(group)
+    for (var i = 0; i < Data.groupsData.groups.length; i++) {
+      if (Data.groupsData.groups[i].url === group.key) {
+        //グループ自身を削除
+        Data.groupsData.groups.splice(i, 1)
+        //削除した状態をストレージへ保存
+        StorageData.saveURLData();
 
-    // これらの各サンプル グループには、個別に表示する一意のキーが
-    // 必要です。
-    var sampleGroups = [
-        //{ key: "Atnd", title: "Atnd", subtitle: "Group Subtitle: 1", backgroundImage: darkGray, description: groupDescription, url: "http://api.atnd.org/events/?keyword_or=google,cloud&format=json&count=100", func: funcAtnd },
-        { key: "kokucheese1", title: "こくちーず", subtitle: "Group Subtitle: 2", backgroundImage: lightGray, description: groupDescription, url: "http://azusaar.appspot.com/api/kokucheese?count=100", func: funcAtnd },
-        { key: "partake1", title: "partake", subtitle: "Group Subtitle: 3", backgroundImage: mediumGray, description: groupDescription, url: "http://azusaar.appspot.com/api/partake?count=100", func: funcAtnd },
-        { key: "zusaar1", title: "zusaar", subtitle: "Group Subtitle: 4", backgroundImage: lightGray, description: groupDescription, url: "http://azusaar.appspot.com/api/zusaar?count=100", func: funcAtnd }
-    ];
-
-    function funcAtnd(obj) {
-      return {
-        title: obj.title,
-        subtitle: "subtitle",
-        description: obj.event_url,
-        content: "",
-        lat: obj.lat,
-        lon: obj.lon
-        /* title:obj.title,
-         event_url:obj.event_url,
-         started_at:obj.started_at,
-         address:obj.address,
-         place:obj.place,
-         lat:obj.place,
-         lon:obj.lon */
+        
+        return
       }
     }
-
-    // これらの各サンプル項目には、特定のグループへの参照が
-    // 必要です。
-    var sampleItems = [
-        { group: sampleGroups[0], title: "Item Title: 1", subtitle: "Item Subtitle: 1", description: itemDescription, content: itemContent, backgroundImage: lightGray },
-        { group: sampleGroups[0], title: "Item Title: 2", subtitle: "Item Subtitle: 2", description: itemDescription, content: itemContent, backgroundImage: darkGray },
-        { group: sampleGroups[0], title: "Item Title: 3", subtitle: "Item Subtitle: 3", description: itemDescription, content: itemContent, backgroundImage: mediumGray },
-        { group: sampleGroups[0], title: "Item Title: 4", subtitle: "Item Subtitle: 4", description: itemDescription, content: itemContent, backgroundImage: darkGray },
-        { group: sampleGroups[0], title: "Item Title: 5", subtitle: "Item Subtitle: 5", description: itemDescription, content: itemContent, backgroundImage: mediumGray },
-
-        { group: sampleGroups[1], title: "Item Title: 1", subtitle: "Item Subtitle: 1", description: itemDescription, content: itemContent, backgroundImage: darkGray },
-        { group: sampleGroups[1], title: "Item Title: 2", subtitle: "Item Subtitle: 2", description: itemDescription, content: itemContent, backgroundImage: mediumGray },
-        { group: sampleGroups[1], title: "Item Title: 3", subtitle: "Item Subtitle: 3", description: itemDescription, content: itemContent, backgroundImage: lightGray },
-
-        { group: sampleGroups[2], title: "Item Title: 1", subtitle: "Item Subtitle: 1", description: itemDescription, content: itemContent, backgroundImage: mediumGray },
-        { group: sampleGroups[2], title: "Item Title: 2", subtitle: "Item Subtitle: 2", description: itemDescription, content: itemContent, backgroundImage: lightGray },
-        { group: sampleGroups[2], title: "Item Title: 3", subtitle: "Item Subtitle: 3", description: itemDescription, content: itemContent, backgroundImage: darkGray },
-        { group: sampleGroups[2], title: "Item Title: 4", subtitle: "Item Subtitle: 4", description: itemDescription, content: itemContent, backgroundImage: lightGray },
-        { group: sampleGroups[2], title: "Item Title: 5", subtitle: "Item Subtitle: 5", description: itemDescription, content: itemContent, backgroundImage: mediumGray },
-        { group: sampleGroups[2], title: "Item Title: 6", subtitle: "Item Subtitle: 6", description: itemDescription, content: itemContent, backgroundImage: darkGray },
-        { group: sampleGroups[2], title: "Item Title: 7", subtitle: "Item Subtitle: 7", description: itemDescription, content: itemContent, backgroundImage: mediumGray },
-
-        { group: sampleGroups[3], title: "Item Title: 1", subtitle: "Item Subtitle: 1", description: itemDescription, content: itemContent, backgroundImage: darkGray },
-        { group: sampleGroups[3], title: "Item Title: 2", subtitle: "Item Subtitle: 2", description: itemDescription, content: itemContent, backgroundImage: lightGray },
-        { group: sampleGroups[3], title: "Item Title: 3", subtitle: "Item Subtitle: 3", description: itemDescription, content: itemContent, backgroundImage: darkGray },
-        { group: sampleGroups[3], title: "Item Title: 4", subtitle: "Item Subtitle: 4", description: itemDescription, content: itemContent, backgroundImage: lightGray },
-        { group: sampleGroups[3], title: "Item Title: 5", subtitle: "Item Subtitle: 5", description: itemDescription, content: itemContent, backgroundImage: mediumGray },
-        { group: sampleGroups[3], title: "Item Title: 6", subtitle: "Item Subtitle: 6", description: itemDescription, content: itemContent, backgroundImage: lightGray },
-
-        { group: sampleGroups[4], title: "Item Title: 1", subtitle: "Item Subtitle: 1", description: itemDescription, content: itemContent, backgroundImage: lightGray },
-        { group: sampleGroups[4], title: "Item Title: 2", subtitle: "Item Subtitle: 2", description: itemDescription, content: itemContent, backgroundImage: darkGray },
-        { group: sampleGroups[4], title: "Item Title: 3", subtitle: "Item Subtitle: 3", description: itemDescription, content: itemContent, backgroundImage: lightGray },
-        { group: sampleGroups[4], title: "Item Title: 4", subtitle: "Item Subtitle: 4", description: itemDescription, content: itemContent, backgroundImage: mediumGray },
-
-        { group: sampleGroups[5], title: "Item Title: 1", subtitle: "Item Subtitle: 1", description: itemDescription, content: itemContent, backgroundImage: lightGray },
-        { group: sampleGroups[5], title: "Item Title: 2", subtitle: "Item Subtitle: 2", description: itemDescription, content: itemContent, backgroundImage: darkGray },
-        { group: sampleGroups[5], title: "Item Title: 3", subtitle: "Item Subtitle: 3", description: itemDescription, content: itemContent, backgroundImage: mediumGray },
-        { group: sampleGroups[5], title: "Item Title: 4", subtitle: "Item Subtitle: 4", description: itemDescription, content: itemContent, backgroundImage: darkGray },
-        { group: sampleGroups[5], title: "Item Title: 5", subtitle: "Item Subtitle: 5", description: itemDescription, content: itemContent, backgroundImage: lightGray },
-        { group: sampleGroups[5], title: "Item Title: 6", subtitle: "Item Subtitle: 6", description: itemDescription, content: itemContent, backgroundImage: mediumGray },
-        { group: sampleGroups[5], title: "Item Title: 7", subtitle: "Item Subtitle: 7", description: itemDescription, content: itemContent, backgroundImage: darkGray },
-        { group: sampleGroups[5], title: "Item Title: 8", subtitle: "Item Subtitle: 8", description: itemDescription, content: itemContent, backgroundImage: lightGray }
-    ];
-
-
-
-    return sampleItems;
   }
+
+  //URLデータを追加、保存する
+  function addURLData(url, inputData) {
+    if (!inputData.title) {
+      inputData.title = ""
+    }
+    if (!inputData.subtitle) {
+      inputData.subtitle = ""
+    }
+    Data.groupsData.groups.push({ title: inputData.title,subtitle: inputData.subtitle, url: url })
+    StorageData.saveURLData();
+  }
+
+  //BindingListをリセットし、Itemを読み直す
+  function refreshItem() {
+    map.entities.clear();
+    list.splice(0, list.length)
+    StorageData.loadURLData();
+  }
+
+})();
+(function () {
+  "use strict";
+
+  var applicationData = Windows.Storage.ApplicationData.current;
+  var folder = applicationData.localFolder
+
+  WinJS.Namespace.define("StorageData", {
+    saveImage: saveImage,
+    loadImage: loadImage,
+    deleteImage: deleteImage,
+    loadURLData: loadURLData,
+    saveURLData: saveURLData
+  });
+
+  //グループに対応する画像をローカルフォルダへ保存する
+  function saveImage(group,image) {
+    image.copyAsync(folder, "i" + Utility.createHash(group.key), Windows.Storage.CreationCollisionOption.replaceExisting).done(copySucceeded)
+    function copySucceeded(iAsyncAction) {
+      Debug.writeln(iAsyncAction.path + "を作成しました。");
+      
+    }
+  }
+
+  //グループに対応する画像をローカルフォルダからロードする
+  function loadImage(group,successCallback,errorCallback) {
+    folder.getFileAsync("i" + Utility.createHash(group.key))
+.done(
+//succeeded
+function (image) {
+  successCallback(image)
+},
+//not found
+function () {
+  errorCallback()
+});
+  }
+
+  //グループに対応する画像を削除する
+  function deleteImage(group) {
+    folder.getFileAsync("i" + Utility.createHash(group.key))
+.done(
+function (image) {
+  image.deleteAsync(Windows.Storage.StorageDeleteOption.permanentDelete).done(
+    function () { }
+    , function () { }
+    );
+},
+function () {
+});
+  }
+
+  //URLデータをローカルフォルダへ保存する
+  function saveURLData() {
+
+    folder.createFileAsync("dataFile.json", Windows.Storage.CreationCollisionOption.replaceExisting)
+   .then(function (dataFile) {
+     
+     return Windows.Storage.FileIO.writeTextAsync(dataFile, JSON.stringify(Data.groupsData));
+   }).done(function () {
+   });
+  }
+
+  //URLデータをローカルフォルダからロードし、リストへ追加する
+  function loadURLData(/*successCallback,errorCallback*/) {
+    folder.getFileAsync("dataFile.json")
+   .then(function (file) {
+     return Windows.Storage.FileIO.readTextAsync(file);
+   }).done(function (groupsData) {
+     try{
+       Data.groupsData = JSON.parse(groupsData)
+       Data.groupsData.groups.forEach(function (group) {
+         Data.loadGroupFromURL(group.url, { title: group.title,subtitle:group.subtitle })
+       })
+       //successCallback(Data.groupsData);
+     } catch (error) {
+       //errorCallback()
+     }
+     
+   }, function () {
+     //errorCallback();
+   });
+  }
+
+
+
 })();

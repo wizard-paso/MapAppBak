@@ -49,7 +49,8 @@ var searchManager;
 
               //loadContents();
               initialize();
-              Data.loadGroupFromURL("http://api.atnd.org/events/?keyword_or=google,cloud&format=json&count=1");
+              //Data.loadGroupFromURL("http://api.atnd.org/events/?keyword_or=google,cloud&format=json&count=1");
+              StorageData.loadURLData();
             });
           }
           })
@@ -88,39 +89,14 @@ var searchManager;
     app.sessionState.history = nav.history;
   };
   function initialize() {
+    document.getElementById("refreshButton").addEventListener("click", refreshItem, false);
     document.getElementById("changeMapButton").addEventListener("click", clickChangeMap, false);
-    document.getElementById("changeImage").addEventListener("click", clickChangeImage, false);
+    document.getElementById("changeImageButton").addEventListener("click", clickChangeImage, false);
+    document.getElementById("deleteItemButton").addEventListener("click", clickDeleteItem, false);
 
-    //var appBar = document.getElementById("appbar").winControl;
-    //appBar.hideCommands(document.getElementById("appbar").querySelectorAll('.singleSelect'));
-
-
-    //var appBarDiv = document.getElementById("appbar");
-    //appBarDiv.winControl.hideCommands(appBarDiv.querySelectorAll('.singleSelect'));
-
-
-    //document.getElementById("itemslist").winControl.addEventListener("selectionchanged", selectionChanged, false);
-
-    
-
-    function selectionChanged(event) {
-      var listView = event.currentTarget.winControl;
-      var appBar = document.getElementById("appbar").winControl;
-
-      if (listView.selection.count() > 0) {
-
-        // sticky, openプロパティを設定しないと、複数選択した時にAppBarが隠れてしまう。
-        appBar.sticky = true;
-        appBar.open = true;
-        // ここでAppBarが表示される。
-        appBar.show();
-      } else {
-        appBar.sticky = false;
-        appBar.open = false;
-      }
+    function refreshItem() {
+      Data.refreshItem();
     }
-
-    //document.getElementById("changePicture").addEventListener("click", clickChangeMap, false);
 
     function clickChangeMap() {
       if (map.getMapTypeId() == Microsoft.Maps.MapTypeId.road) {
@@ -132,12 +108,93 @@ var searchManager;
       }
     }
 
+    function clickDeleteItem(event) {
+      var listView = document.getElementById("listView").winControl
+      var selectedItems = listView.selection.getItems()
+      var items = listView.selection.getItems()
+      var group = Data.resolveGroupReference(items._value[0].key)
+
+      if (listView.selection.count() == 1) {
+        var msg = new Windows.UI.Popups.MessageDialog(group.title + "を削除します。");
+
+        msg.commands.append(new Windows.UI.Popups.UICommand("削除", deleteItem));
+        msg.commands.append(new Windows.UI.Popups.UICommand("キャンセル"));
+
+        msg.defaultCommandIndex = 1;
+        msg.cancelCommandIndex = 1;
+        msg.showAsync();
+      }
+
+      function deleteItem() {
+        Data.deleteGroup(group)
+      }
+    }
+    function clickChangeImage(event) {
+      var listView = document.getElementById("listView").winControl
+      var selectedItems = listView.selection.getItems()
+
+      if (listView.selection.count() == 1) {
+
+        var items = listView.selection.getItems()
+        Debug.writeln(items._value[0].key)
+        loadImage(Data.resolveGroupReference(items._value[0].key));
+
+
+      }
+
+      //ファイルピッカーを用いてグループ画像をロードする
+      function loadImage(group) {
+
+        var picker = new Windows.Storage.Pickers.FileOpenPicker();
+        picker.fileTypeFilter.replaceAll([".jpg", ".bmp", ".gif", ".png"]);
+        picker.pickSingleFileAsync().then(processResults, displayError);
+
+        function processResults(file) {
+
+
+          // Check that the picker returned a file. 
+          // The picker returns null if the user clicked Cancel.
+          if (file) {
+            Data.setGroupImage(group, file)
+            StorageData.saveImage(group, file)
+
+            //var localStorage = WinJS.Application.local;
+            //localStorage.
+            //elements["imageControl"].src = imageBlob;
+
+
+            //elements["imageInformation"].innerText =          "The src of the first image has been set to " + file.name;
+
+            // Release the blob resources.
+            //URL.revokeObjectURL(imageBlob);
+          } else {
+            // elements["imageInformation"].innerText = "An image wasn't selected.";
+          }
+          function copySucceeded(iAsyncAction) {
+            Debug.writeln(iAsyncAction.path + "を作成しました。");
+            /*var p = document.createElement('p')
+            p.innerText = "[ " + iAsyncAction.path + " ]を作成しました。"
+            element.querySelector("#output").appendChild(p);*/
+          }
+
+        }
+        function displayError(error) {
+          if (imageBlob) {
+            URL.revokeObjectURL(imageBlob);
+          }
+          //document.getElementById("imageInformation").innerText = error;
+        }
+      }
+    }
+
   }
   app.start();
 
   WinJS.Namespace.define("Utility", {
     checkURL: checkURL,
-    //loadImage:loadImage
+    createHash: createHash,
+    //initDeleteFlyout: initDeleteFlyout,
+    //deleteURL: deleteURL
   })
   function getElements(node) {
     var elements = new Array();
@@ -151,71 +208,41 @@ var searchManager;
   function checkURL(node) {
     var elements = getElements(node)
 
-    var url = elements["URLInput"].value //urlDataElement.value
+    var url = node.querySelector("#URLInput").value;//elements["URLInput"].value //urlDataElement.value
     var title = elements["titleInput"].value//titleDataElement.value
+    var subtitle = node.querySelector("#subtitleInput").value;
 
     var status = elements["status"]
 
 
     status.innerHTML = "<p>読み込んでいます...</p>";
 
-    Data.checkLoadGroupFromURL(url, function (succeeded) {
-      if (succeeded) {
+    Data.checkLoadGroupFromURL(url,
+      function success() {
         status.innerHTML = "<p>読み込みに成功しました。</p>"
-        Data.loadGroupFromURL(url,title)
-      } else {
-        status.innerHTML = "<p>読み込みに失敗しました。</p>"
-      }
+        Data.loadGroupFromURL(url, {title:title,subtitle:subtitle})
+        Data.addURLData(url, { title: title, subtitle: subtitle })
+    }, function error() {
+      status.innerHTML = "<p>読み込みに失敗しました。</p>"
     })
     Debug.writeln(title)
 
     Debug.writeln("testes");
   }
-  function clickChangeImage(event){
-    var listView = document.getElementById("listView").winControl
-    var selectedItems = listView.selection.getItems()
-
-    if (listView.selection.count() == 1) {
-
-      var items = listView.selection.getItems()
-      Debug.writeln(items._value[0].key)
-      loadImage(Data.resolveGroupReference(items._value[0].key));
 
 
-    } 
-  }
-  function loadImage(group) {
-    //var elements = getElements(node)
 
-
-    var picker = new Windows.Storage.Pickers.FileOpenPicker();
-    picker.fileTypeFilter.replaceAll([".jpg", ".bmp", ".gif", ".png"]);
-    picker.pickSingleFileAsync().then(processResults, displayError);
-
-    function processResults(file) {
-
-      // Check that the picker returned a file. 
-      // The picker returns null if the user clicked Cancel.
-      if (file) {
-        var imageBlob = URL.createObjectURL(file);
-        group.backgroundImage = imageBlob
-        //elements["imageControl"].src = imageBlob;
-
-
-        //elements["imageInformation"].innerText =          "The src of the first image has been set to " + file.name;
-
-        // Release the blob resources.
-        URL.revokeObjectURL(imageBlob);
-      } else {
-        // elements["imageInformation"].innerText = "An image wasn't selected.";
-      }
+  //ハッシュ値を生成する
+  function createHash(str) {
+    var hash = 0, i, char;
+    if (str.length == 0) return hash;
+    for (i = 0; i < str.length; i++) {
+      char = str.charCodeAt(i);
+      hash = ((hash << 5) - hash) + char;
+      hash = hash & hash;
     }
-    function displayError(error) {
-      if (imageBlob) {
-        URL.revokeObjectURL(imageBlob);
-      }
-      //document.getElementById("imageInformation").innerText = error;
-    }
+    return hash;
   }
+
 
 })();

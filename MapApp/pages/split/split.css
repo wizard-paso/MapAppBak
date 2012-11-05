@@ -1,4 +1,58 @@
-﻿.splitpage {
+﻿.item-time{
+	position:absolute;
+	height:110px;
+	width:110px;
+}
+.item-time .month{
+	position:absolute;
+	font-size:3em;
+	width:65px;
+	text-align:center;
+}
+.item-time .split{
+	position:static;
+	line-height:110px;
+	text-align:center;
+	font-size:3em;
+	
+}
+.item-time .day{
+	position:absolute;
+	bottom:0px;
+	right:0px;
+	font-size:3em;
+	width:65px;
+	text-align:center;
+}
+
+.article-time{
+	position:absolute;
+	height:180px;
+	width:180px;
+}
+.article-time .month{
+	position:absolute;
+	font-size:5em;
+	width:100px;
+	text-align:center;
+}
+.article-time .split{
+	position:static;
+	line-height:180px;
+	text-align:center;
+	font-size:5em;
+	
+}
+.article-time .day{
+	position:absolute;
+	bottom:0px;
+	right:0px;
+	font-size:5em;
+	width:100px;
+	text-align:center;
+}
+
+.splitpage {
     -ms-grid-columns: 640px 1fr;
     display: -ms-grid;
     height: 100%;
@@ -106,6 +160,34 @@
             }
 
 @media screen and (-ms-view-state: filled) {
+.item-time{
+	position:absolute;
+	height:60px;
+	width:60px;
+}
+.item-time .month{
+	position:absolute;
+	font-size:1.5em;
+	width:30px;
+	text-align:center;
+}
+.item-time .split{
+	position:static;
+	line-height:60px;
+	text-align:center;
+	font-size:1.5em;
+	
+}
+.item-time .day{
+	position:absolute;
+	bottom:0px;
+	right:0px;
+	font-size:1.5em;
+	width:30px;
+	text-align:center;
+}
+
+	
     .splitpage {
         -ms-grid-columns: 420px 1fr;
     }
@@ -139,6 +221,59 @@
 }
 
 @media screen and (-ms-view-state: snapped) {
+.item-time{
+	position:absolute;
+	height:60px;
+	width:60px;
+}
+.item-time .month{
+	position:absolute;
+	font-size:1.5em;
+	width:30px;
+	text-align:center;
+}
+.item-time .split{
+	position:static;
+	line-height:60px;
+	text-align:center;
+	font-size:1.5em;
+	
+}
+.item-time .day{
+	position:absolute;
+	bottom:0px;
+	right:0px;
+	font-size:1.5em;
+	width:30px;
+	text-align:center;
+}
+
+.article-time{
+	position:absolute;
+	height:50px;
+	width:50px;
+}
+.article-time .month{
+	position:absolute;
+	font-size:1em;
+	width:30px;
+	text-align:center;
+}
+.article-time .split{
+	position:static;
+	line-height:50px;
+	text-align:center;
+	font-size:1em;
+	
+}
+.article-time .day{
+	position:absolute;
+	bottom:0px;
+	right:0px;
+	font-size:1em;
+	width:30px;
+	text-align:center;
+}
     .splitpage {
         -ms-grid-columns: 320px 0px;
     }
@@ -192,8 +327,10 @@
                     }
 
                 .splitpage .articlesection header .article-image {
-                    height: 160px;
-                    width: 242px;
+					/*display:none;/*スナップ時は非表示に*/
+                    height: 50px;
+                    width: 50px;
+					position:absolute;
                 }
 
         .splitpage .itemlistsection, .splitpage .articlesection {

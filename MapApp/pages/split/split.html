@@ -20,6 +20,7 @@
     <div class="itemtemplate" data-win-control="WinJS.Binding.Template">
         <div class="item">
             <img class="item-image" src="#" data-win-bind="src: backgroundImage; alt: title" />
+            <div class="item-time"><div class="month" data-win-bind="textContent: month">12</div><div class="split">/</div><div class="day" data-win-bind="textContent: day">8</div></div>
             <div class="item-info">
                 <h3 class="item-title win-type-ellipsis" data-win-bind="textContent: title"></h3>
                 <h6 class="item-subtitle win-type-ellipsis" data-win-bind="textContent: subtitle"></h6>
@@ -43,11 +44,12 @@
             <article>
                 <header class="header">
                     <div class="text">
-                        <h2 class="article-title win-type-ellipsis" data-win-bind="textContent: title"></h2>
+                        <h2 class="article-title win-type-ellipsis"><a data-win-bind="textContent: title; href: url"></a></h2>
                         <h4 class="article-subtitle" data-win-bind="textContent: subtitle"></h4>
 						<div class="article-content" data-win-bind="textContent: content"></div>
                     </div>
                     <img class="article-image" src="#" data-win-bind="src: backgroundImage; alt: title" />
+					<div class="article-time"><div class="month" data-win-bind="textContent: month">12</div><div class="split">/</div><div class="day" data-win-bind="textContent: day">8</div></div>
                 </header>
                 
             </article>

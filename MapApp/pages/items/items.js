@@ -16,7 +16,7 @@
             this._initializeLayout(listView, Windows.UI.ViewManagement.ApplicationView.value);
             listView.element.focus();
 
-
+            //リスト用テンプレート関数。リソース解放処理を記述する必要があるため、関数として定義
             function itemTemplateFunction(itemPromise) {
 
               return itemPromise.then(function (item) {
@@ -44,7 +44,9 @@
 
                 div.appendChild(childDiv);
                 
-                URL.revokeObjectURL(item.data.backgroundImage);
+                //メモリを占有するため、開放するのが望ましいが、item->split->item時にURLが読み込めなくなるために開放できない
+                //URL.revokeObjectURL(item.data.backgroundImage);
+
 
                 return div;
               });
@@ -66,8 +68,6 @@
 
                 var items = listView.selection.getItems()
                 Debug.writeln(items._value[0].key)
-                //loadImage(Data.resolveGroupReference(items._value[0].key));
-                //var item=listView.selection.selected.getItems()
 
                 // ここでAppBarが表示される。
                 appBar.show();
@@ -130,44 +130,7 @@
               Microsoft.Maps.Events.invoke(item.pushpin, 'entitychanged', { entity: item.pushpin });
             }
           })
-        
-
-          /*  */
 
         }
     });
-
-    function loadImage(group) {
-      //var elements = getElements(node)
-
-
-      var picker = new Windows.Storage.Pickers.FileOpenPicker();
-      picker.fileTypeFilter.replaceAll([".jpg", ".bmp", ".gif", ".png"]);
-      picker.pickSingleFileAsync().then(processResults, displayError);
-
-      function processResults(file) {
-
-        // Check that the picker returned a file. 
-        // The picker returns null if the user clicked Cancel.
-        if (file) {
-          var imageBlob = URL.createObjectURL(file);
-          group.backgroundImage=imageBlob
-          //elements["imageControl"].src = imageBlob;
-
-
-          //elements["imageInformation"].innerText =          "The src of the first image has been set to " + file.name;
-
-          // Release the blob resources.
-          URL.revokeObjectURL(imageBlob);
-        } else {
-         // elements["imageInformation"].innerText = "An image wasn't selected.";
-        }
-      }
-      function displayError(error) {
-        if (imageBlob) {
-          URL.revokeObjectURL(imageBlob);
-        }
-        //document.getElementById("imageInformation").innerText = error;
-      }
-    }
 })();

@@ -1,4 +1,41 @@
-﻿.win-listview :not(.win-footprint).win-container {
+﻿a{
+	color:white;
+}
+
+.article-time{
+	position:absolute;
+	height:180px;
+	width:180px;
+}
+.article-time .month{
+	position:absolute;
+	font-size:5em;
+}
+.article-time .split{
+	position:static;
+	line-height:180px;
+	text-align:center;
+	font-size:5em;
+	
+}
+.article-time .date{
+	position:absolute;
+	bottom:0px;
+	right:0px;
+	font-size:5em;
+}
+.article-image{
+	opacity:0.5;
+}
+
+.win-settingsflyout{
+	z-index:9998
+}
+.win-appbar {
+	z-index:9999
+}
+
+.win-listview :not(.win-footprint).win-container {
     background-color: rgba(128,128,128,0.5);
 }
 .win-selectionstylefilled.win-listview .win-container:hover {
@@ -32,7 +69,7 @@ article > header{
     position:absolute;
     height: 100%;
     width: 100%;
-    z-index:9999;
+    z-index:9997;
 }
 
 .fragment {
