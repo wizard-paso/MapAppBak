@@ -56,6 +56,9 @@
             appBar.hideCommands(document.getElementById("appbar").querySelectorAll('.singleSelect'));//singleSelectを隠す処理
             listView.addEventListener("selectionchanged", onSelectionChanged, false); //ページを切り替えるごとにリスナーが消えるので、ここにaddEventListenerが必要
 
+            //document.getElementById("refreshButton").removeEventListener("click", refreshItem, false)
+
+
 
             function onSelectionChanged(event) {
                

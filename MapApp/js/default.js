@@ -89,13 +89,18 @@ var searchManager;
     app.sessionState.history = nav.history;
   };
   function initialize() {
-    document.getElementById("refreshButton").addEventListener("click", refreshItem, false);
+
     document.getElementById("changeMapButton").addEventListener("click", clickChangeMap, false);
     document.getElementById("changeImageButton").addEventListener("click", clickChangeImage, false);
     document.getElementById("deleteItemButton").addEventListener("click", clickDeleteItem, false);
-
+    document.getElementById("refreshButton").addEventListener("click", refreshItem, false);
     function refreshItem() {
-      Data.refreshItem();
+      //var a = document.getElementById("listView").winControl
+      if (nav.location == "/pages/items/items.html") {
+        Data.refreshItem();
+      }
+      
+      
     }
 
     function clickChangeMap() {

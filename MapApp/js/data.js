@@ -21,7 +21,7 @@
   //ローカルストレージにあるファイルと同期させるデータ
   var groupsData = { groups: [] }
 
-  //色。お遊び
+  //曜日ごとの色0-6、日ｰ土の7種
     var color = [
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWP4v0z0PwAHHAK6PrQwrwAAAABJRU5ErkJggg==",
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWMwNjb+DwACzwGZM+tEvwAAAABJRU5ErkJggg==",
@@ -30,7 +30,51 @@
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWMwNjb+DwACzwGZM+tEvwAAAABJRU5ErkJggg==",
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWMwNjb+DwACzwGZM+tEvwAAAABJRU5ErkJggg==",
       "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWNgcDnzHwADaAIQR5SNSgAAAABJRU5ErkJggg==",
-]
+    ]
+
+    var dataDefinition = {
+      event: { type: "object", data: [["events"], ["items"], ["Items"], ["data", "items"], []] },
+      groupTitle: { type: "string", data: [["Title"]] },
+      groupSubitle: { type: "string", data: [["subtitle"]] },
+      groupImage: { type: "string", data: [["image"]] },
+      title: { type: "string", data: [["Title"]] },
+      subtitle: { type: "string", data: [["subtitle"]] },
+      lat: { type: "string", data: [["Location","Lat"]] },
+      lon: { type: "string", data: [["Location", "Lng"]] },
+      address: { type: "string", data: [["location"], ["Location","Address"]] },
+      url: { type: "string", data: [["event_url"], ["alternateLink"],["Url"],["Link"]] },
+      description: { type: "string", data: [["details"], ["event_url"], ["url"]] },
+      date: { type: "string", data: [["started_at"], ["StartDate"], ["when", 0,"start"], ["updated_at"]["updated"]] }
+    }
+  /*if (!data.title) {
+  data.title = (data.Title ? data.Title : undefined)
+}
+if (!data.address) {
+  data.address = (data.location ? data.location : (data.Location && data.Location.Address ? data.Location.Address : undefined))
+}
+if (!data.lat || !data.lon) {
+  data.lat = (data.Location && data.Location.Lat) ? data.Location.Lat : undefined
+  data.lon = (data.Location && data.Location.Lng) ? data.Location.Lng : undefined
+}
+if (!data.subtitle) {
+  data.subtitle = toStaticHTML((data.address ? data.address + " " : "") + (data.place ? data.place : ""));
+}
+if (!data.url) {
+  data.url = (data.event_url ? data.event_url : (data.alternateLink ? data.alternateLink : (data.Url ? data.Url : (data.Link ? data.Link : ""))))
+}
+if (!data.description) {
+  data.description = (data.details ? data.details.substring(0, 100) : (data.event_url ? data.event_url : (data.url ? data.url : "")))
+} else {
+  data.description = toStaticHTML(data.description.substring(0, 100));
+}
+if (!data.date) {
+  data.date = (data.started_at ?
+    data.started_at : (data.StartDate ?
+      data.StartDate : (data.when[0].start ?
+        data.when[0].start : (data.updated_at ?
+        data.updated_at : (data.updated ?
+        data.updated : undefined)))))
+}*/
 
   // TODO: データを実際のデータに置き換えます。
   // 非同期ソースのデータは使用可能になるたびに追加できます。
@@ -52,6 +96,7 @@
     deleteGroup: deleteGroup,
     addURLData: addURLData,
     refreshItem: refreshItem,
+    findData: findData
   });
 
   // 項目の参照を取得します。グループ キーと項目のタイトルを
@@ -96,33 +141,76 @@
         var jsonData = JSON.parse(receivedData.response);
         var group = {
           key: url,
-          title: (inputData.title ? inputData.title : (jsonData.title ? jsonData.title : url)),
-          subtitle: (inputData.subtitle?inputData.subtitle:(jsonData.subtitle ? jsonData.subtitle : "")),
-          backgroundImage: (jsonData.image ? jsonData.image : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC"),
+          title: (inputData.title ? inputData.title : (findData(jsonData,"groupTitle")?findData(jsonData,"groupTitle"):url)),
+          subtitle: (inputData.subtitle ? inputData.subtitle : (findData(jsonData, "groupSubtitle")?findData(jsonData, "groupSubtitle"):"")),
+          backgroundImage: (findData(jsonData, "groupImage") ? findData(jsonData, "groupImage") : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWMwNjb+DwACzwGZM+tEvwAAAABJRU5ErkJggg=="/*"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC"*/),
           url: url
         };
-       
+
+        var array = findData(jsonData, "event");
+
+        /*if (jsonData.event&&jsonData.event instanceof Array) {
+          //Array要素がeventの場合。azusaarなど
+          array = jsonData.event
+        } else if (jsonData.events&&jsonData.events instanceof Array) {
+          //Array要素がeventsの場合。atndなど
+          array = jsonData.events
+        } else if (jsonData.items&&jsonData.items instanceof Array) {
+
+          array = jsonData.items
+        } else if (jsonData.Items && jsonData.Items instanceof Array) {
+          //eventcastなど
+          array = jsonData.Items
+        } else if (jsonData.data&&(jsonData.data.items && jsonData.data.items instanceof Array)) {
+          //Array要素がdata.itemsの場合。Googleカレンダーなど
+          array = jsonData.data.items
+        }*/
+
+        if (array) {
+          array.forEach(function (eventData) {
+            eventData.group = group
+            checkData(eventData);
+          })
+        }
       
-        ((jsonData["event"]) ? jsonData["event"] : jsonData["events"]).forEach(function (eventData) {
-          eventData.group=group
-          checkData(eventData);
-        })
+        
       } catch (error) {
         return;
       }
     },
-    function error() {
-      var msg = new Windows.UI.Popups.MessageDialog(
-    "インターネットに接続していないと、このアプリケーションは使用できません。");
+    function error(result) {
+      var msg;
 
-      // Add commands and set their command handlers
-      msg.commands.append(
-          new Windows.UI.Popups.UICommand("閉じる", function () {window.close()}));
+      switch (result.status) {
+        case 0:
+          msg = new Windows.UI.Popups.MessageDialog(
+        "インターネットに接続していないと、このアプリケーションは使用できません。");
 
+          msg.commands.append(
+              new Windows.UI.Popups.UICommand("閉じる", function () { window.close() }));
 
-      // Show the message dialog
-      msg.showAsync();
-      // handle error conditions.
+          msg.showAsync();
+          break;
+        case 404:
+          msg = new Windows.UI.Popups.MessageDialog(
+        "サイトに接続できません。 ["+result.status+"] URL: "+url);
+
+          msg.commands.append(
+              new Windows.UI.Popups.UICommand("閉じる", function () {}));
+
+          msg.showAsync();
+          break;
+        default:
+          msg = new Windows.UI.Popups.MessageDialog(
+"サイト接続エラー [" + result.status + "] URL: " + url);
+
+          msg.commands.append(
+              new Windows.UI.Popups.UICommand("閉じる", function () { }));
+
+          msg.showAsync();
+          break;
+      }
+
     }
     );
 
@@ -131,26 +219,47 @@
       if (!data.group) {
         return  //error
       }
+      ["title", "subtitle", "address", "lat", "lon", "url", "description", "date"].forEach(function (item) {
+        if(!data[item])
+        data[item]=findData(data,item)
+      })
+      /*if (!data.title) {
+        data.title = (data.Title ? data.Title : undefined)
+      }
+      if (!data.address) {
+        data.address = (data.location ? data.location : (data.Location && data.Location.Address ? data.Location.Address : undefined))
+      }
+      if (!data.lat || !data.lon) {
+        data.lat = (data.Location && data.Location.Lat) ? data.Location.Lat : undefined
+        data.lon = (data.Location && data.Location.Lng) ? data.Location.Lng : undefined
+      }
       if (!data.subtitle) {
         data.subtitle = toStaticHTML((data.address ? data.address + " " : "") + (data.place ? data.place : ""));
       }
+      if (!data.url) {
+        data.url = (data.event_url ? data.event_url : (data.alternateLink ? data.alternateLink : (data.Url ? data.Url : (data.Link ? data.Link : ""))))
+      }
       if (!data.description) {
-        data.description = (data.event_url ? data.event_url : (data.url ? data.url : ""))
+        data.description = (data.details ? data.details.substring(0, 100) : (data.event_url ? data.event_url : (data.url ? data.url : "")))
       } else {
         data.description = toStaticHTML(data.description.substring(0, 100));
       }
-      if (!data.url) {
-        data.url = (data.event_url ? data.event_url : "")
-      }
       if (!data.date) {
-        data.date = (data.started_at ? data.started_at : (data.ended_at ? data.ended_at : (data.updated_at ? data.updated_at : undefined)))
-      }
+        data.date = (data.started_at ?
+          data.started_at : (data.StartDate ?
+            data.StartDate : (data.when[0].start ?
+              data.when[0].start : (data.updated_at ?
+              data.updated_at : (data.updated ?
+              data.updated : undefined)))))
+      }*/
+
+      /* 日時をDate型へ変換 */
       if (data.date) {
         if (data.date = new Date(data.date)) {
           data.month = data.date.getMonth() + 1;
           data.day = data.date.getDate();
           data.time = data.date.getTime();
-          if (!data.image) {
+          if (!data.image) {  /* 画像がない場合は曜日の色へ */
             data.image =color[data.date.getDay()]
           }
         } else {
@@ -159,28 +268,43 @@
       } else {
         data.month = data.day = "";
       }
-      if (!data.image) {
-        data.image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC"
-      }
 
-      /* undefinedの場合に空の文字列にする要素を設定 */
       ["title", "content"].forEach(function (element) {
         if (!data[element]) {
           data[element] = "";
         }
-        data[element]=toStaticHTML(data[element])
+        data[element] = toStaticHTML(data[element])
       })
 
-      if ((!data.lat || !data.lon) && data.address) {
+      /* その他、調整すべきもの 画像なしの場合など */
+      if (!data.image) {
+        data.image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC"
+      }
+      if (!data.subtitle) {
+        data.subtitle=(data.address ? data.address + " " : "") + (data.place ? data.place : "")
+      }
+      if (data.description) {
+        data.description = toStaticHTML(data.description.substring(0, 150));
+      }
+
+      /* 制約にひっかかりそうなものを静的HTML化する */
+      ["title", "subtitle","content","description","address"].forEach(function (element) {
+        data[element] = toStaticHTML(data[element])
+      })
+
+      if ((!data.lat || !data.lon) && (data.address&&data.address!="")) {
         var tmpData = data;
         getLatLon(tmpData.address,
           function (result) {
-            //var topResult = ;
-            if (result.results[0]) {
+            //var topResult = ;result.parseResults[0].location.location.latitude
+            if (result.results&&result.results[0]) {
               tmpData.lat = result.results[0].location.latitude;
               tmpData.lon = result.results[0].location.longitude;
               setItem(tmpData);
-            } else {
+            } /*else if (result.parseResults&&result.parseResults[0]) {//searchManager.searchを利用した場合の結果
+              tmpData.lat = result.parseResults[0].location.location.latitude
+              tmpData.lon = result.parseResults[0].location.location.longitude
+            }*/else {
               setItem(tmpData);
             }
 
@@ -237,12 +361,16 @@
         backgroundImage: formattedData.image, url: formattedData.url,month: formattedData.month,day: formattedData.day,time: formattedData.time, pushpin: pushpin  //pushpin 参照を渡す
       });
 
-      var key = formattedData.group.key
-      StorageData.loadImage(Data.resolveGroupReference(key),
-        function (image) {
-          Data.setGroupImage(Data.resolveGroupReference(key), image);
-        }, function () { }
-        )
+      try{//画像がない場合は以下でエラーが発生する。仕様
+        var key = formattedData.group.key
+        StorageData.loadImage(Data.resolveGroupReference(key),
+          function (image) {
+            Data.setGroupImage(Data.resolveGroupReference(key), image);
+          }, function () { }
+          )
+      } catch (error) {
+
+      }
     }
   }
 
@@ -251,13 +379,24 @@
 
     WinJS.xhr({ url: url }).done(function complete(receivedData) {
       var jsonData = JSON.parse(receivedData.response);
-      if (jsonData["event"]&&jsonData["event"] instanceof Array) {
-        successCallback()
-      } else if (jsonData["events"] && jsonData["events"] instanceof Array) {
+      if (findData(jsonData, "event")) {
         successCallback()
       } else {
         errorCallback()
       }
+      /*if (jsonData.event&&jsonData.event instanceof Array) {
+        successCallback()
+      } else if (jsonData.events && jsonData.events instanceof Array) {
+        successCallback()
+      } else if (jsonData.items && jsonData.items instanceof Array) {
+        successCallback()
+      } else if (jsonData.Items && jsonData.Items instanceof Array) {
+        successCallback()
+      } else if (jsonData.data && (jsonData.data.items && jsonData.data.items instanceof Array)) {
+        successCallback()
+      } else {
+        errorCallback()
+      }*/
       
     },function error(request) {
       errorCallback()
@@ -268,7 +407,7 @@
   function setGroupImage(group, image) {
     try {
       //以前使用していたオブジェクトに対するURLを開放する
-      URL.revokeObjectURL(group.backgroundImage);
+        URL.revokeObjectURL(group.backgroundImage);
       var imageBlob = URL.createObjectURL(image);
       group.backgroundImage = imageBlob
     } catch (error) {
@@ -306,11 +445,50 @@
     StorageData.saveURLData();
   }
 
-  //BindingListをリセットし、Itemを読み直す
-  function refreshItem() {
-    map.entities.clear();
-    list.splice(0, list.length)
-    StorageData.loadURLData();
+  //BindingListをリセットし、Itemを読み直す //現在は全体更新のみ
+  function refreshItem(group) {
+    try{
+     /* if (group) {
+        getItemsFromGroup(group).forEach(function (item) {
+          if (item.pushpin) {
+            var index = map.entities.indexOf(item.pushpin)
+            if (index > -1) {
+              map.entities.removeAt(index)
+            }
+          }
+        })
+        getItemsFromGroup(group).splice(0, getItemsFromGroup(group).length)
+        loadGroupFromURL(group.url, { title: group.title, subtitle: group.subtitle })
+      } else {*/
+        map.entities.clear();
+        list.splice(0, list.length)
+        StorageData.loadURLData();
+      //}
+    } catch (error) { }
+  }
+
+  //あらかじめ定義したデータ構造に基づいて、該当するデータを探す
+  function findData(data, property) {
+    try{
+      var definition = dataDefinition[property]
+      if (!definition) { return undefined }
+      var array = definition.data
+      var type = definition.type
+
+      for (var value in array) {
+        var obj = data
+        for (var objName in array[value]) {
+          if (!(obj = obj[array[value][objName]])) {
+            break
+          }
+        }
+        if (typeof obj == type) {
+          return obj;
+        }
+      }
+    } catch (error) {
+    }
+    return undefined;
   }
 
 })();

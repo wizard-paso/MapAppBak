@@ -49,6 +49,15 @@
                 // ListView に表示します。
                 listView.selection.set(Math.max(this._itemSelectionIndex, 0));
             }
+
+            document.getElementById("refreshButton").removeEventListener("click", refreshItem, false)
+            document.getElementById("refreshButton").addEventListener("click", refreshItem, false);
+            function refreshItem() {
+              if (nav.location == "/pages/split/split.html") {
+                Data.refreshItem(Data.resolveGroupReference(options.groupKey));
+              }
+            }
+
         },
 
         unload: function () {
