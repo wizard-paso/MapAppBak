@@ -1,0 +1,29 @@
+﻿<!doctype HTML>
+<html>
+    <head>
+        <title>flyout</title>
+    </head>
+    <body>
+        <!-- BEGINSETTINGFLYOUT -->
+        <div data-win-control="WinJS.UI.SettingsFlyout" aria-label="settings flyout" data-win-options="{settingsCommandId:'settings',width:'narrow'}">
+            <!-- Use either 'win-ui-light' or 'win-ui-dark' depending on the contrast between the header title and background color -->
+            <div class="win-ui-dark win-header" style="background-color:#00b2f0"> <!-- Background color reflects app's personality -->
+               <button type="button" onclick="WinJS.UI.SettingsFlyout.show()" class="win-backbutton"></button>
+               <div class="win-label">設定</div>
+            </div>
+            <div class="win-content ">
+                <div class="win-settings-section">
+            <h3>アプリタイトルの変更</h3>
+			<div id="form">
+            <input id="titleInput" type="text" placeholder="アプリタイトル(必須)"/>
+			<button id="addSiteButton" onClick="Utility.changeAppTitle(document.getElementById('form'))">アプリタイトルの変更</button>
+            
+
+			<div id="status"></div>
+			</div>
+                </div>
+            </div>
+        </div>
+        <!-- ENDSETTINGSFLYOUT -->
+    </body>
+</html>

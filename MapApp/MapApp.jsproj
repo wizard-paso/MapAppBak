@@ -63,6 +63,7 @@
     <Content Include="js\data.js" />
     <Content Include="js\default.js" />
     <Content Include="js\navigator.js" />
+    <Content Include="pages\charm\settings.html" />
     <Content Include="pages\charm\addSite.html" />
     <Content Include="pages\items\items.css" />
     <Content Include="pages\items\items.html" />

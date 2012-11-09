@@ -33,18 +33,18 @@
     ]
 
     var dataDefinition = {
-      event: { type: "object", data: [["events"], ["items"], ["Items"], ["data", "items"], []] },
-      groupTitle: { type: "string", data: [["Title"]] },
-      groupSubitle: { type: "string", data: [["subtitle"]] },
-      groupImage: { type: "string", data: [["image"]] },
-      title: { type: "string", data: [["Title"]] },
-      subtitle: { type: "string", data: [["subtitle"]] },
-      lat: { type: "string", data: [["Location","Lat"]] },
-      lon: { type: "string", data: [["Location", "Lng"]] },
-      address: { type: "string", data: [["location"], ["Location","Address"]] },
-      url: { type: "string", data: [["event_url"], ["alternateLink"],["Url"],["Link"]] },
-      description: { type: "string", data: [["details"], ["event_url"], ["url"]] },
-      date: { type: "string", data: [["started_at"], ["StartDate"], ["when", 0,"start"], ["updated_at"]["updated"]] }
+      event: { instanceOf: Array, data: [["events"], ["items"], ["Items"], ["data", "items"], [],["results"],["value","items"]] },
+      groupTitle: { typeOf: "string", data: [["Title"]] },
+      groupSubitle: { typeOf: "string", data: [["subtitle"]] },
+      groupImage: { typeOf: "string", data: [["image"]] },
+      title: { typeOf: "string", data: [["Title"], ["user", "name"], ["from_user"]] },
+      subtitle: { typeOf: "string", data: [["subtitle"], ["user", "screen_name"], ["from_user_name"]] },
+      lat: { typeOf: "string", data: [["Location", "Lat"], ["place", "bounding_box", "coodinates", 0, 0]] },
+      lon: { typeOf: "string", data: [["Location", "Lng"], ["place", "bounding_box", "coodinates", 0, 1]] },
+      address: { typeOf: "string", data: [["location"], ["Location", "Address"], ["place", "name"]] },
+      url: { typeOf: "string", data: [["event_url"], ["alternateLink"], ["Url"], ["Link"]] },
+      description: { typeOf: "string", data: [["details"], ["event_url"], ["url"], ["text"]] },
+      date: { typeOf: "string", data: [["started_at"], ["StartDate"], ["when", 0, "start"], ["updated_at"], ["updated"], ["created_at"]] }
     }
   /*if (!data.title) {
   data.title = (data.Title ? data.Title : undefined)
@@ -144,7 +144,8 @@ if (!data.date) {
           title: (inputData.title ? inputData.title : (findData(jsonData,"groupTitle")?findData(jsonData,"groupTitle"):url)),
           subtitle: (inputData.subtitle ? inputData.subtitle : (findData(jsonData, "groupSubtitle")?findData(jsonData, "groupSubtitle"):"")),
           backgroundImage: (findData(jsonData, "groupImage") ? findData(jsonData, "groupImage") : "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVQImWMwNjb+DwACzwGZM+tEvwAAAABJRU5ErkJggg=="/*"data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC"*/),
-          url: url
+          url: url,
+          API: url.split("/")[2]
         };
 
         var array = findData(jsonData, "event");
@@ -255,36 +256,73 @@ if (!data.date) {
 
       /* 日時をDate型へ変換 */
       if (data.date) {
-        if (data.date = new Date(data.date)) {
+        Debug.writeln(data.date, new Date(data.date))
+        /* Date型に変換できたら */
+        if (!isNaN(new Date(data.date))) {
+          data.date = new Date(data.date)
           data.month = data.date.getMonth() + 1;
           data.day = data.date.getDate();
           data.time = data.date.getTime();
           if (!data.image) {  /* 画像がない場合は曜日の色へ */
             data.image =color[data.date.getDay()]
           }
-        } else {
-          data.month = data.day = "";
+          /* 変換できなかったら */
+        } else{
+          /* IE対策日時フォーマット http://l-w-i.net/m/20081202_01.txt */
+          try{
+            var created_at = data.date.split(" ");
+            var post_date = created_at[1] + " "
+                 + created_at[2] + ", "
+                 + created_at[5] + " "
+                 + created_at[3];
+            /* IE用の処置がうまくいけば */
+            if (!isNaN(new Date(post_date))) {
+              data.date = new Date(post_date)
+              data.month = data.date.getMonth() + 1;
+              data.day = data.date.getDate();
+              data.time = data.date.getTime();
+              if (!data.image) {  /* 画像がない場合は曜日の色へ */
+                data.image = color[data.date.getDay()]
+              }
+              /* 対策も無理だったら */
+            } else {
+              data.month = data.day = "";
+            }
+          }catch(error){
+            data.month = data.day = "";
+          }
         }
+        /* data.dateが存在しなければ */
       } else {
         data.month = data.day = "";
       }
 
-      ["title", "content"].forEach(function (element) {
+      /* 存在しない場合に空にする要素 */
+      ["title", "content","description"].forEach(function (element) {
         if (!data[element]) {
           data[element] = "";
         }
-        data[element] = toStaticHTML(data[element])
       })
 
       /* その他、調整すべきもの 画像なしの場合など */
+      /* 画像がない場合は灰色を使う */
       if (!data.image) {
         data.image = "data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAAAXNSR0IArs4c6QAAAARnQU1BAACxjwv8YQUAAAAJcEhZcwAADsQAAA7EAZUrDhsAAAANSURBVBhXY3B0cPoPAANMAcOba1BlAAAAAElFTkSuQmCC"
       }
+      /* subtitleが存在しなければ、あれば住所+場所を使う */
       if (!data.subtitle) {
         data.subtitle=(data.address ? data.address + " " : "") + (data.place ? data.place : "")
       }
+      /* descriptionがあれば、150文字に制限する */
       if (data.description) {
-        data.description = toStaticHTML(data.description.substring(0, 150));
+        data.description = data.description.substring(0, 150);
+      }
+
+      /* ついったーの場合はAPIでアドレスを返さないので、ここで生成する */
+      if (data.API == "api.twitter.com") {
+        data.url = "http://twitter.com/" + data.user.screen_name + "/status/" + data.id_str
+      } else if (data.API == "search.twitter.com") {
+          url: "http://twitter.com/" + data.from_user + "/status/" + data.id_str
       }
 
       /* 制約にひっかかりそうなものを静的HTML化する */
@@ -292,11 +330,11 @@ if (!data.date) {
         data[element] = toStaticHTML(data[element])
       })
 
+      /* 座標がない場合はジオコーダーを使って取得する */
       if ((!data.lat || !data.lon) && (data.address&&data.address!="")) {
         var tmpData = data;
         getLatLon(tmpData.address,
           function (result) {
-            //var topResult = ;result.parseResults[0].location.location.latitude
             if (result.results&&result.results[0]) {
               tmpData.lat = result.results[0].location.latitude;
               tmpData.lon = result.results[0].location.longitude;
@@ -340,6 +378,7 @@ if (!data.date) {
         pushpin.setOptions({
           //icon: 0//iconの画像までのパス いずれはAPIで指定されたURLのアイコンをここに
           //typeName:"micro"
+          text: '1'
         });
         map.entities.push(pushpin);
 
@@ -378,25 +417,29 @@ if (!data.date) {
   function checkLoadGroupFromURL(url, successCallback, errorCallback) {
 
     WinJS.xhr({ url: url }).done(function complete(receivedData) {
-      var jsonData = JSON.parse(receivedData.response);
-      if (findData(jsonData, "event")) {
-        successCallback()
-      } else {
+      try{
+        var jsonData = JSON.parse(receivedData.response);
+        if (findData(jsonData, "event")) {
+          successCallback()
+        } else {
+          errorCallback()
+        }
+        /*if (jsonData.event&&jsonData.event instanceof Array) {
+          successCallback()
+        } else if (jsonData.events && jsonData.events instanceof Array) {
+          successCallback()
+        } else if (jsonData.items && jsonData.items instanceof Array) {
+          successCallback()
+        } else if (jsonData.Items && jsonData.Items instanceof Array) {
+          successCallback()
+        } else if (jsonData.data && (jsonData.data.items && jsonData.data.items instanceof Array)) {
+          successCallback()
+        } else {
+          errorCallback()
+        }*/
+      } catch (error) {
         errorCallback()
       }
-      /*if (jsonData.event&&jsonData.event instanceof Array) {
-        successCallback()
-      } else if (jsonData.events && jsonData.events instanceof Array) {
-        successCallback()
-      } else if (jsonData.items && jsonData.items instanceof Array) {
-        successCallback()
-      } else if (jsonData.Items && jsonData.Items instanceof Array) {
-        successCallback()
-      } else if (jsonData.data && (jsonData.data.items && jsonData.data.items instanceof Array)) {
-        successCallback()
-      } else {
-        errorCallback()
-      }*/
       
     },function error(request) {
       errorCallback()
@@ -473,7 +516,8 @@ if (!data.date) {
       var definition = dataDefinition[property]
       if (!definition) { return undefined }
       var array = definition.data
-      var type = definition.type
+      var typeOf = definition.typeOf
+      var instanceOf = definition.instanceOf
 
       for (var value in array) {
         var obj = data
@@ -482,9 +526,12 @@ if (!data.date) {
             break
           }
         }
-        if (typeof obj == type) {
+        if (typeOf&&typeof obj == typeOf) {
           return obj;
+      }else if(instanceOf&&obj instanceof instanceOf){
+        return obj;
         }
+
       }
     } catch (error) {
     }
@@ -562,6 +609,9 @@ function () {
    }).done(function (groupsData) {
      try{
        Data.groupsData = JSON.parse(groupsData)
+       if (!Data.groupsData.title) {
+         Data.groupsData.title = "Hakutiz";
+       }
        Data.groupsData.groups.forEach(function (group) {
          Data.loadGroupFromURL(group.url, { title: group.title,subtitle:group.subtitle })
        })

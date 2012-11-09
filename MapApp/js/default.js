@@ -77,7 +77,7 @@ var searchManager;
   });
   /*チャームに追加設定を配置する*/
   app.onsettings = function (e) {
-    e.detail.applicationcommands = { "addSite": { title: "サイトを追加する", href: "/pages/charm/addSite.html" } };
+    e.detail.applicationcommands = { "addSite": { title: "サイトを追加する", href: "/pages/charm/addSite.html" },"settings": { title: "設定", href: "/pages/charm/settings.html" } };
     WinJS.UI.SettingsFlyout.populateSettings(e);
   };
 
@@ -197,6 +197,7 @@ var searchManager;
 
   WinJS.Namespace.define("Utility", {
     checkURL: checkURL,
+    changeAppTitle: changeAppTitle,
     createHash: createHash,
     //initDeleteFlyout: initDeleteFlyout,
     //deleteURL: deleteURL
@@ -214,10 +215,10 @@ var searchManager;
     var elements = getElements(node)
 
     var url = node.querySelector("#URLInput").value;//elements["URLInput"].value //urlDataElement.value
-    var title = elements["titleInput"].value//titleDataElement.value
+    var title = node.querySelector("#titleInput").value//titleDataElement.value
     var subtitle = node.querySelector("#subtitleInput").value;
 
-    var status = elements["status"]
+    var status = node.querySelector("#status")
 
 
     status.innerHTML = "<p>読み込んでいます...</p>";
@@ -235,7 +236,20 @@ var searchManager;
     Debug.writeln("testes");
   }
 
+  function changeAppTitle(node) {
+    var title = node.querySelector("#titleInput").value
+    var status = node.querySelector("#status")
 
+    if (title != "") {
+      Data.groupsData.title = title;
+      document.querySelector("header[role=banner] .pagetitle").textContent = title;
+      StorageData.saveURLData();
+      status.innerHTML = "<p>アプリタイトルを変更しました。</p>"
+    } else {
+      status.innerHTML = "<p>文字が入力されていません。</p>"
+    }
+
+  }
 
   //ハッシュ値を生成する
   function createHash(str) {

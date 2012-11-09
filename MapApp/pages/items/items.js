@@ -16,6 +16,8 @@
             this._initializeLayout(listView, Windows.UI.ViewManagement.ApplicationView.value);
             listView.element.focus();
 
+            element.querySelector("header[role=banner] .pagetitle").textContent = (Data.groupsData.title?Data.groupsData.title:"");
+
             //リスト用テンプレート関数。リソース解放処理を記述する必要があるため、関数として定義
             function itemTemplateFunction(itemPromise) {
 
@@ -55,9 +57,6 @@
             var appBar = document.getElementById("appbar").winControl;
             appBar.hideCommands(document.getElementById("appbar").querySelectorAll('.singleSelect'));//singleSelectを隠す処理
             listView.addEventListener("selectionchanged", onSelectionChanged, false); //ページを切り替えるごとにリスナーが消えるので、ここにaddEventListenerが必要
-
-            //document.getElementById("refreshButton").removeEventListener("click", refreshItem, false)
-
 
 
             function onSelectionChanged(event) {

@@ -2,28 +2,7 @@
 	color:white;
 }
 
-.article-time{
-	position:absolute;
-	height:180px;
-	width:180px;
-}
-.article-time .month{
-	position:absolute;
-	font-size:5em;
-}
-.article-time .split{
-	position:static;
-	line-height:180px;
-	text-align:center;
-	font-size:5em;
-	
-}
-.article-time .date{
-	position:absolute;
-	bottom:0px;
-	right:0px;
-	font-size:5em;
-}
+
 .article-image{
 	opacity:0.5;
 }
